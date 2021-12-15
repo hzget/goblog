@@ -18,3 +18,12 @@
 the gold and silver user can analyze the posts of the blog via AI algorithms
 
 this function is under developping now
+
+## how to use
+
+### Prerequisites
+
+* mysql for storing blog posts
+* redis for storing cache -- login sessions
+
+You can change to others for corresponding service. Just only make very little code changes.
