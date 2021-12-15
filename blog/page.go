@@ -17,10 +17,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
+    "log"
 )
 
 type PageInfo struct {
