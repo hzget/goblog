@@ -1,4 +1,4 @@
-module github/hzget/goblog/blog
+module github.com/hzget/goblog
 
 go 1.16
 
