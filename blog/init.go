@@ -33,7 +33,7 @@ var siteRe string
 
 func initDebugMode() {
 	debugPage = true
-    debugViewCode = true
+	debugViewCode = true
 }
 
 func initGlobals() {

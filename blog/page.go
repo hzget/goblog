@@ -16,11 +16,11 @@ package blog
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
-    "log"
 )
 
 type PageInfo struct {
@@ -216,10 +216,10 @@ func Run(addr string) {
 	initRedisClient()
 	initDBHandler()
 
-    if (debugViewCode) {
-	    http.Handle(sitePrefix+"/code/", http.StripPrefix(
-		    sitePrefix+"/code/", http.FileServer(http.Dir("./"))))
-    }
+	if debugViewCode {
+		http.Handle(sitePrefix+"/code/", http.StripPrefix(
+			sitePrefix+"/code/", http.FileServer(http.Dir("./"))))
+	}
 
 	http.HandleFunc(sitePrefix+"/", frontpageHandler)
 	http.HandleFunc(sitePrefix+"/view/", makeHandler(viewHandler))
@@ -227,7 +227,7 @@ func Run(addr string) {
 	http.HandleFunc(sitePrefix+"/save/", makeHandler(saveHandler))
 	http.HandleFunc(sitePrefix+"/delete/", makeHandler(deleteHandler))
 	http.Handle(sitePrefix+"/templ/rs/", http.StripPrefix(
-	    sitePrefix+"/templ/rs/", http.FileServer(http.Dir("./templ/resource/"))))
+		sitePrefix+"/templ/rs/", http.FileServer(http.Dir("./templ/resource/"))))
 
 	http.HandleFunc(sitePrefix+"/signup", makeAuthHandler(signupHandler))
 	http.HandleFunc(sitePrefix+"/signin", makeAuthHandler(signinHandler))

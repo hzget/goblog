@@ -16,9 +16,9 @@ package main
  */
 
 import (
-    "github.com/hzget/goblog/blog"
+	"github.com/hzget/goblog/blog"
 )
 
 func main() {
-    blog.Run(":8080")
+	blog.Run(":8080")
 }
