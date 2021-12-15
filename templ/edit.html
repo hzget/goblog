@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+    <script>
+        function checkTitle() {
+            var title = document.getElementById("title").value
+            if (title == "" || title.match(/^New$/ig) != null) {
+                alert("please input a valid title")
+                return false
+            }
+            return true
+        }
+    </script>
+    <body>
+        <form id="formid" action="../save/{{.Id}}" method="POST" onsubmit="return checkTitle(event);">
+            <a href="..">&curvearrowleft; FrontPage</a>
+            <h1><input type="text" placeholder="Enter the Title" value="{{printf "%s" .Title}}" id="title" name="title"/></h1>
+            <div>
+            <input type="button" onclick='location.href="../view/{{.Id}}"' value="&curvearrowleft; Back to View">
+            <input type="reset" value="&curvearrowleft; Reset">
+            <br><br>
+            </div>
+            <div><textarea name="body" rows="20" cols="80" id="content">{{printf "%s" .Body}}</textarea></div>
+            <div><input type="submit" value="Save"></div>
+        </form>
+    </body>
+</html>

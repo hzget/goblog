@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+    <head>
+    <style>
+        sub {
+            vertical-align: sub;
+            font-size: xx-small;
+        }
+        .ratings {
+          list-style-type: none;
+          margin: 0;
+          padding: 0;
+          width: 100%;
+          direction: rtl;
+          text-align: left;
+        }
+
+        .star {
+          position: relative;
+          line-height: 30px;
+          display: inline-block;
+          transition: color 0.2s ease;
+          color: #ebebeb;
+        }
+
+        .star:before {
+          content: '\2605';
+          width: 30px;
+          height: 30px;
+          font-size: 30px;
+        }
+
+        .star:hover,
+        .star.selected,
+        .star:hover ~ .star,
+        .star.selected ~ .star{
+          transition: color 0.8s ease;
+          color: yellow;
+        }
+    </style>
+    <script src="../templ/js/jquery-3.6.0.min.js"></script>
+    <script>
+        $(function (){
+          var star = '.star', selected = '.selected';
+
+          $(star).on('click', function(){
+            str = $(this).attr('id')
+            jsdata = JSON.stringify({ "id": {{.Id}}, "star": parseInt(str.slice(4,5)) })
+            $.ajax({url: "../vote",
+                data: jsdata,
+                contentType : 'application/json',
+                type: 'POST',
+                success: function(result,status,xhr){
+                    location.href = "../view/{{.Id}}"
+                },
+                error: function(xhr,status,error){
+                    alert("error: response from server: " + error)
+                }
+            })
+          });
+{{if gt .Vote 0}}
+          $(selected).each(function(){
+              $(this).removeClass('selected');
+          });
+       $('#star{{.Vote}}').addClass('selected')
+{{end}}
+        });
+    </script>
+    </head>
+    <body>
+        <a href="..">&curvearrowleft; FrontPage</a>
+        <h1 id="title" value={{.Id}} >
+{{if .Edit}}
+        <a href="../edit/{{.Id}}">{{printf "%s" .Title}}</a>
+{{else}}
+        {{printf "%s" .Title}}
+{{end}}
+        <sub>by {{.Author}}</sub>
+        </h1>
+        <p id="body">
+        {{range $index, $p := .Body}}
+        {{$p}} <br>
+        {{end}}
+        </p>
+        <br><br>
+        Ratings:
+        <ol class="ratings">
+          <li class="star" id="star5"></li>
+          <li class="star" id="star4"></li>
+          <li class="star" id="star3"></li>
+          <li class="star" id="star2"></li>
+          <li class="star" id="star1"></li>
+        </ol>
+        <table>
+        {{range $index, $p := .Percent}}
+        <tr>
+        <td>{{add $index 1}} star</td>
+        <td><meter value={{printf "%.2f" $p}} min="0" max="1"></meter></td>
+        {{$p100 := multiple $p 100}}<td>{{printf "%.f" $p100}}%</td>
+        </tr>
+        {{end}}
+        </table>
+        {{if .Del}}
+        <form id="formid" action="../delete/{{.Id}}" method="POST" onsubmit="return confirm('want to delete?');">
+            <div><input type="submit" value="[x]Delete"></div>
+        </form>
+        {{end}}
+    </body>
+</html>

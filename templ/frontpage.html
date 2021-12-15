@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+    <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <link rel="stylesheet" href="./templ/rs/css/nav.css">
+    <link rel="stylesheet" href="./templ/rs/css/auth.css">
+    <script src="./templ/rs/js/auth.js"></script>
+    </head>
+    <body onload=checkCookie()>
+        <div class="header">
+        <h1>FrontPage</h1>
+        <p id="welcome"></p>
+        </div>
+        <div id="navbar">
+          <a class="active" href="javascript:void(0)">Home</a>
+          <a href="./edit/0">[+]New</a>
+          <a href="./superadmin">UserAdmin</a>
+          <a href="./analysis">Analysis</a>
+          <a href="./code">Code</a>
+        </div>
+        <div id="login">
+            <button class="open-button" onclick="openForm()">Login&nbsp;&nbsp;/&nbsp;&nbsp;Register</button>
+            <div class="auth-popup" id="auth-div">
+              <div class="auth-container">
+                <h1>Login or Register</h1>
+
+                <label for="email"><b>Username/Email/PhoneNo</b></label>
+                <input type="text" placeholder="Enter Username" name="email" id="usr" required>
+
+                <label for="psw"><b>Password</b></label>
+                <input type="password" placeholder="Enter Password" name="psw" id="pwd" required>
+
+                <button type="button" class="btn" onclick="signin()">Login</button>
+                <button type="button" class="btn" onclick="signup()">Register</button>
+                <button type="button" class="btn cancel" onclick="closeForm()">Close</button>
+              </div>
+            </div>
+        </div>
+        <div id="logout">
+            <button class="open-button" onclick="logout()">Logout</button>
+        </div>
+ 
+        <div class="content">
+        <p>
+        {{range $idx, $wp := .}}
+        <h4>
+        <a href=./view/{{$wp.Id}}>{{printf "%s" $wp.Title}}</a>
+        <sub>
+        <small>&nbsp;Author: {{$wp.Author}}</small>&comma;
+        <small>&nbsp;Last modified time: {{$wp.Modified}}</small>
+        </sub>
+        </h4>
+        {{end}}
+        </p>
+        </div>
+    </body>
+</html>

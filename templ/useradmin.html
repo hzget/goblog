@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+    <head>
+    <style>
+        table {
+          border-collapse: collapse;
+          border-spacing: 0;
+          border: 1px solid #ddd;
+        }
+
+        th, td {
+          text-align: left;
+          padding: 12px;
+        }
+
+        tr:nth-child(even) {
+          background-color: #f2f2f2;
+        }
+    </style>
+    <script>
+        function Update(user) {
+            rank = document.querySelector('input[name="'+user+'"]:checked').value
+            info = '{"pairs": [{ "username": "' + user + '", "rank": "' + rank +'" }]}'
+            sendRequest(info)
+        }
+        function UpdateAll() {
+            var radios = document.querySelectorAll('input[type=radio]:checked')
+            if (radios.length < 1) { return }
+
+            info = '{"pairs": ['
+            for (i = 0; i < radios.length; i++) {
+                info += '{ "username": "' + radios[i].name + '", "rank": "' + radios[i].value +'" }'
+                if (i < radios.length -1){ info += ',' }
+            }
+            info += ']}'
+            sendRequest(info)
+        }
+
+        function sendRequest(info) {
+            const xhttp = new XMLHttpRequest();
+            xhttp.onload = function() {
+                result = this.responseText
+                if (this.status == 200) {
+                    alert("update success")
+                    location.href="./superadmin"
+                } else {
+                    alert("failed to update: " + result)
+                }
+            }
+            xhttp.open("POST", "./saveranks");
+            xhttp.send(info);
+        }
+        
+    </script>
+    </head>
+    <body>
+        <a href="./">&curvearrowleft; FrontPage</a>
+        <h1>Manage the ranks of users</h1>
+        <form>
+        <div>
+        <table>
+          <tr>
+            <th>User</th>
+            <th>Rank</th>
+            <th>Action</th>
+          </tr>
+        {{range $idx, $info := .}}
+           {{$user := $info.Username}}{{ $rank := $info.Rank}}
+            <tr>
+            <td>{{$user}}</td>
+            <td>
+            <input type="radio" name="{{$user}}" id='{{printf "%s_bronze" $user}}'
+                   value="bronze" {{if eq $rank "bronze" }}checked{{end}} >
+            <label for='{{printf "%s_bronze" $user}}'>bronze</label>
+            <input type="radio" name="{{$user}}" id='{{printf "%s_silver" $user}}'
+                   value="silver" {{if eq $rank "silver" }}checked{{end}} >
+            <label for='{{printf "%s_silver" $user}}'>silver</label>
+            <input type="radio" name="{{$user}}" id='{{printf "%s_gold" $user}}'
+                   value="gold" {{if eq $rank "gold" }}checked{{end}} >
+            <label for='{{printf "%s_gold" $user}}'>gold</label>
+            </td>
+            <td><input type="button" onclick='Update("{{$user}}")' value="Update"></td>
+            <!--
+            <td><input type="button" onclick="Delete({{$user}})" value="Delete"></td>
+            -->
+            </tr>
+        {{end}}
+        </table>
+        </div>
+        <br><br>
+        <div><input type="button" onclick="UpdateAll()" value="UpdateAll">
+        <input type="Reset"></div>
+        </form>
+    </body>
+</html>
