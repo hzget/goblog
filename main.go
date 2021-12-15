@@ -16,7 +16,7 @@ package main
  */
 
 import (
-    "github/hzget/goblog/blog"
+    "github.com/hzget/goblog/blog"
 )
 
 func main() {
