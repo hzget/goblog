@@ -1,23 +1,31 @@
 # goblog
 
-## functions
+A blog system used for sharing ideas and analyzing
+these articles via AI algorithms.
+
+## services
 
 ### work as a blog site
 
 * read/write blogs
 * signup/signin/logout
 * vote with stars 1~5
-* user admin: add ranks to users: bronze, silver, gold
+* user ranks: bronze, silver, gold
+* user admin
 
-### work as a golang learning project
+### work as code browsing platform
 
-* can view all underlying code from the site
+In the debug mode, programmers can browse underlying code on line.
+It can help them to learn this system and make the debug life easier.
 
-### working as AI learning project
+### work as AI analysis system
 
-the gold and silver user can analyze the posts of the blog via AI algorithms
+As a reader, the gold and silver user can
+get AI analysis of article(s) on the blog.
 
-this function is under developping now
+As a programmer, the user can develop the AI functions.
+
+this module is under developping now
 
 ## how to use
 
@@ -27,3 +35,8 @@ this function is under developping now
 * redis for storing cache -- login sessions
 
 You can change to others for corresponding service. Just only make very little code changes.
+
+### run the code
+
+Just enter the command: go run .
+
