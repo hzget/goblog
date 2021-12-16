@@ -37,6 +37,16 @@ this module is under developping now
 You can change to others for corresponding service. Just only make very little code changes.
 
 ### run the code
+Just run the command ***go run .*** :
 
-Just enter the command: go run .
+```bash
+$ go run .
+/55e2e2fd-ae96-45b9-9249-6740416ebe18
+PONG <nil>
+Connected!
 
+```
+
+After that, visit the url via a web browser:
+
+http://youripaddr:8080/55e2e2fd-ae96-45b9-9249-6740416ebe18/
