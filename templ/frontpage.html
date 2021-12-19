@@ -15,7 +15,9 @@
           <a href="./edit/0">[+]New</a>
           <a href="./superadmin">UserAdmin</a>
           <a href="./analysis">Data Analysis</a>
+          {{if .ViewCode}}
           <a href="./code">Code Browsing</a>
+          {{end}}
         </div>
         <div id="login">
             <button class="open-button" onclick="openForm()">Login&nbsp;&nbsp;/&nbsp;&nbsp;Register</button>
@@ -41,7 +43,7 @@
  
         <div class="content">
         <p>
-        {{range $idx, $wp := .}}
+        {{range $idx, $wp := .Posts}}
         <h4>
         <a href=./view/{{$wp.Id}}>{{printf "%s" $wp.Title}}</a>
         <sub>

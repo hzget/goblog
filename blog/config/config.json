@@ -1,0 +1,18 @@
+{
+    "debug": {
+        "page": true,
+        "viewcode": true
+    },
+    "page": {
+        "randomprefix": true
+    },
+    "datastore": {
+        "mysql": {
+            "addr": "192.168.1.12:3306",
+            "addr2": "10.43.6.18:3306"
+        },
+        "redis": {
+            "addr": "localhost:6379"
+        }
+    }
+}

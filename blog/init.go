@@ -13,6 +13,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
+	"github.com/spf13/viper"
 )
 
 var rdb *redis.Client
@@ -31,17 +32,35 @@ var randomSitePrefix = false
 var sitePrefix string
 var siteRe string
 
-func initDebugMode() {
-	debugPage = true
-	debugViewCode = true
+func initGlobals() {
+	getConfig()
+	initDebugMode()
+	initPagePrefix()
+	initRedisClient()
+	initDBHandler()
+	initTemplate()
 }
 
-func initGlobals() {
-	randomSitePrefix = true
-	initPagePrefix()
+func getConfig() {
+    // attention: viper is not thread-safe
+	viper.SetConfigName("config")
+	viper.SetConfigType("json")
+	viper.AddConfigPath("blog/config")
+	viper.AddConfigPath(".")
+	err := viper.ReadInConfig()
+	if err != nil {
+		panic(fmt.Errorf("Fatal error config file: %w \n", err))
+	}
+}
+
+func initDebugMode() {
+	debugPage = viper.GetBool("debug.page")
+	debugViewCode = viper.GetBool("debug.viewcode")
 }
 
 func initPagePrefix() {
+
+	randomSitePrefix = viper.GetBool("page.randomprefix")
 
 	if !randomSitePrefix {
 		sitePrefix = ``
@@ -62,41 +81,59 @@ func initPagePrefix() {
 }
 
 func initDBHandler() {
+
+	addr := viper.GetString("datastore.mysql.addr")
+
+	var err error
+	if err = initMysqlDBHandler(addr); err == nil {
+		fmt.Println("Connected!")
+		return
+	}
+
+	fmt.Printf("db err: %v, now try another db\n", err)
+
+	addr = viper.GetString("datastore.mysql.addr2")
+	if err = initMysqlDBHandler(addr); err == nil {
+		fmt.Println("Connected!")
+		return
+	}
+
+	log.Fatal(err)
+}
+
+func initMysqlDBHandler(addr string) error {
+
 	cfg := mysql.Config{
 		// linux cmd to set var: export DBUSER=username
-		User:   os.Getenv("DBUSER"),
-		Passwd: os.Getenv("DBPASS"),
-		Net:    "tcp",
-		Addr:   "192.168.1.12:3306",
-		//Addr: "10.43.6.18:3306",
-		//Addr:                 "10.43.23.193:3306",
+		User:                 os.Getenv("DBUSER"),
+		Passwd:               os.Getenv("DBPASS"),
+		Net:                  "tcp",
+		Addr:                 addr,
 		DBName:               "recordings",
 		AllowNativePasswords: true,
 		ParseTime:            true,
 		Loc:                  time.Local,
 	}
-	// Get a database handle.
+
 	var err error
 	db, err = sql.Open("mysql", cfg.FormatDSN())
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Create a child context
 	ctx, cancel := context.WithTimeout(context.Background(), shortDuration)
 	defer cancel()
-	err = db.PingContext(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("Connected!")
+
+	return db.PingContext(ctx)
 }
 
 func initRedisClient() {
+
+	addr := viper.GetString("datastore.redis.addr")
 	ctx := context.Background()
 
 	rdb = redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
+		Addr:     addr,
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})

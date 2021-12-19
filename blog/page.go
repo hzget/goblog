@@ -16,7 +16,6 @@ package blog
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -37,7 +36,7 @@ const (
 
 func frontpageHandler(w http.ResponseWriter, r *http.Request) {
 
-	data, err := getPostsInfo()
+	data, err := getFrontpageData()
 	if err != nil {
 		fmt.Fprintf(w, "load post info failed: %v", err)
 		return
@@ -177,6 +176,20 @@ func (info *PageInfo) getPermisson() int {
 	return PermView
 }
 
+func getFrontpageData() (interface{}, error) {
+	info, err := getPostsInfo()
+	if err != nil {
+		return nil, err
+	}
+
+	data := struct {
+		ViewCode bool
+		Posts    []Post
+	}{debugViewCode, info}
+
+	return data, nil
+}
+
 func getViewData(info *PageInfo) (interface{}, error) {
 
 	p, err := loadPost(info.Id)
@@ -206,40 +219,4 @@ func getViewData(info *PageInfo) (interface{}, error) {
 	}{p.Id, p.Title, body, p.Author, canEdit, canDel, vote, percent}
 
 	return data, nil
-}
-
-func Run(addr string) {
-
-	initDebugMode()
-	initGlobals()
-	initTemplate()
-	initRedisClient()
-	initDBHandler()
-
-	if debugViewCode {
-		http.Handle(sitePrefix+"/code/", http.StripPrefix(
-			sitePrefix+"/code/", http.FileServer(http.Dir("./"))))
-	}
-
-	http.HandleFunc(sitePrefix+"/", frontpageHandler)
-	http.HandleFunc(sitePrefix+"/view/", makeHandler(viewHandler))
-	http.HandleFunc(sitePrefix+"/edit/", makeHandler(editHandler))
-	http.HandleFunc(sitePrefix+"/save/", makeHandler(saveHandler))
-	http.HandleFunc(sitePrefix+"/delete/", makeHandler(deleteHandler))
-	http.Handle(sitePrefix+"/templ/rs/", http.StripPrefix(
-		sitePrefix+"/templ/rs/", http.FileServer(http.Dir("./templ/resource/"))))
-
-	http.HandleFunc(sitePrefix+"/signup", makeAuthHandler(signupHandler))
-	http.HandleFunc(sitePrefix+"/signin", makeAuthHandler(signinHandler))
-	http.HandleFunc(sitePrefix+"/logout", logoutHandler)
-
-	http.HandleFunc(sitePrefix+"/vote", voteHandler)
-
-	http.HandleFunc(sitePrefix+"/analysis", analysisHandler)
-
-	http.HandleFunc(sitePrefix+"/superadmin", makeAdminHandler(superadminHandler))
-	http.HandleFunc(sitePrefix+"/saveranks", makeAdminHandler(saveranksHandler))
-
-	log.Fatal(http.ListenAndServe(addr, nil))
-
 }
