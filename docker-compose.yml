@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
   goblog:
-    image: goblog:latest
+    image: hzget/goblog:latest
     # sleep 60 secs to wait for mysql and redis startup;
     # the last commands is to keep container running even when goblog is killed;
     # the user can dive into the container with
@@ -15,8 +15,9 @@ services:
         tail -f /dev/null
     ports:
       - 8080:8080
-    volumes:
-      - ./:/go/src/app
+      # for the debug mode, programmer can uncomment following two lines
+#    volumes:
+#      - ./:/go/src/app
     environment:
       MYSQL_HOST: mysql
       MYSQL_USER: goblog
