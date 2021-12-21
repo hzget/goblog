@@ -8,11 +8,13 @@
     },
     "datastore": {
         "mysql": {
-            "addr": "192.168.1.12:3306",
-            "addr2": "10.43.6.18:3306"
+            "addr":     "mysql",
+            "user":     "blog",
+            "passwd":   "blog",
+            "dbname":   "blog"
         },
         "redis": {
-            "addr": "localhost:6379"
+            "addr": "redis:6379"
         }
     }
 }

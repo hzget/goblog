@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
 	"regexp"
 	"text/template"
 	"time"
@@ -42,7 +41,7 @@ func initGlobals() {
 }
 
 func getConfig() {
-    // attention: viper is not thread-safe
+	// attention: viper is not thread-safe
 	viper.SetConfigName("config")
 	viper.SetConfigType("json")
 	viper.AddConfigPath("blog/config")
@@ -82,34 +81,12 @@ func initPagePrefix() {
 
 func initDBHandler() {
 
-	addr := viper.GetString("datastore.mysql.addr")
-
-	var err error
-	if err = initMysqlDBHandler(addr); err == nil {
-		fmt.Println("Connected!")
-		return
-	}
-
-	fmt.Printf("db err: %v, now try another db\n", err)
-
-	addr = viper.GetString("datastore.mysql.addr2")
-	if err = initMysqlDBHandler(addr); err == nil {
-		fmt.Println("Connected!")
-		return
-	}
-
-	log.Fatal(err)
-}
-
-func initMysqlDBHandler(addr string) error {
-
 	cfg := mysql.Config{
-		// linux cmd to set var: export DBUSER=username
-		User:                 os.Getenv("DBUSER"),
-		Passwd:               os.Getenv("DBPASS"),
+		Addr:                 viper.GetString("datastore.mysql.addr"),
+		User:                 viper.GetString("datastore.mysql.user"),
+		Passwd:               viper.GetString("datastore.mysql.passwd"),
+		DBName:               viper.GetString("datastore.mysql.dbname"),
 		Net:                  "tcp",
-		Addr:                 addr,
-		DBName:               "recordings",
 		AllowNativePasswords: true,
 		ParseTime:            true,
 		Loc:                  time.Local,
@@ -124,16 +101,19 @@ func initMysqlDBHandler(addr string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), shortDuration)
 	defer cancel()
 
-	return db.PingContext(ctx)
+	if err = db.PingContext(ctx); err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Connected!")
 }
 
 func initRedisClient() {
 
-	addr := viper.GetString("datastore.redis.addr")
 	ctx := context.Background()
 
 	rdb = redis.NewClient(&redis.Options{
-		Addr:     addr,
+		Addr:     viper.GetString("datastore.redis.addr"),
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})

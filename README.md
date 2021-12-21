@@ -36,8 +36,15 @@ this module is under developping now
 
 You can change to others for corresponding service. Just only make very little code changes.
 
+### Configuration
+
+please the config file config/config.json
+
 ### run the code
-Just run the command ***go run .*** :
+
+### if mysql and redis services are available
+
+modify the config file and run the command ***go run .*** :
 
 ```bash
 $ go run .
@@ -50,3 +57,16 @@ Connected!
 After that, visit the url via a web browser:
 
 http://youripaddr:8080/55e2e2fd-ae96-45b9-9249-6740416ebe18/
+
+### if mysql and redis services are not available
+
+The user can run containers of mysql and redis.
+
+* Then run all containers with docker-compose.yaml:
+
+    docker-compose up -d
+
+* get goblog logs:
+
+    docker-compose logs -f goblog
+

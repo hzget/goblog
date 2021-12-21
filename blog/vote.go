@@ -53,7 +53,7 @@ func (v *VoteStar) save() error {
 
 	s := "star" + strconv.Itoa(v.Star)
 
-	update := `INSERT INTO PostStatistics (postid,` + s + `) VALUES (?, 1)` +
+	update := `INSERT INTO poststatistics (postid,` + s + `) VALUES (?, 1)` +
 		` ON DUPLICATE KEY UPDATE ` + s + `=` + s + `+1`
 	if _, err := db.ExecContext(ctx, update, v.Id); err != nil {
 		return fail(err)

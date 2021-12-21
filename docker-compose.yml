@@ -1,0 +1,48 @@
+version: "3.7"
+
+services:
+  goblog:
+    image: goblog:latest
+    # sleep 10 secs to wait for mysql and redis startup;
+    # the last commands is to keep container running even when goblog is killed;
+    # the user can dive into the container with
+    # the command "docker exec -it <container id> bash" to do something
+    entrypoint: ["/bin/sh","-c"]
+    command:
+      - |
+        sleep 30
+        goblog
+        tail -f /dev/null
+    ports:
+      - 8080:8080
+    volumes:
+      - ./:/go/src/app
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: goblog
+      MYSQL_PASSWORD: goblog
+      MYSQL_DB: recordings
+
+  mysql:
+    image: mysql:5.7
+    volumes:
+      - goblog-mysql-data:/var/lib/mysql
+      - ./sql/create-tables.sql:/docker-entrypoint-initdb.d/create-tables.sql
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_USER: blog
+      MYSQL_PASSWORD: blog
+      MYSQL_DATABASE: blog
+
+  redis:
+    image: redis:6.2.6
+    ports:
+      - 6379:6379
+    volumes:
+      - goblog-redis-data:/data
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+
+volumes:
+  goblog-mysql-data:
+  goblog-redis-data:

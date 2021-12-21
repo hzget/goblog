@@ -32,7 +32,7 @@ func loadPost(id int64) (*Post, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), shortDuration)
 	defer cancel()
 
-	q := `select * from Post where id = ?`
+	q := `select * from post where id = ?`
 	row := db.QueryRowContext(ctx, q, id)
 	err := row.Scan(&p.Id, &p.Title, &p.Author, &p.Date, &p.Modified, &p.Body)
 
@@ -52,7 +52,7 @@ func loadPostStatistics(id int64) (*PostStatistics, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), shortDuration)
 	defer cancel()
 
-	q := `select * from PostStatistics where postid = ?`
+	q := `select * from poststatistics where postid = ?`
 	row := db.QueryRowContext(ctx, q, id)
 	err := row.Scan(&s.PostId, &s.Star1, &s.Star2, &s.Star3, &s.Star4, &s.Star5)
 
@@ -100,7 +100,7 @@ func (p *Post) save() error {
 	var now = time.Now()
 
 	if p.Id == 0 {
-		q := "INSERT INTO Post (title, author, ctime, mtime, body) VALUES (?, ?, ?, ?, ?)"
+		q := "INSERT INTO post (title, author, ctime, mtime, body) VALUES (?, ?, ?, ?, ?)"
 		result, err := db.ExecContext(ctx, q, p.Title, p.Author, now, now, p.Body)
 		if err != nil {
 			return fail(err)
@@ -113,7 +113,7 @@ func (p *Post) save() error {
 		p.Id = id
 
 	} else {
-		q := "UPDATE Post set title = ?, body = ?, mtime = ? where id = ?"
+		q := "UPDATE post set title = ?, body = ?, mtime = ? where id = ?"
 		_, err := db.ExecContext(ctx, q, p.Title, p.Body, now, p.Id)
 		if err != nil {
 			return fail(err)
@@ -125,7 +125,7 @@ func (p *Post) save() error {
 
 func DeletePost(id int64) error {
 
-	q := `DELETE FROM Post WHERE id = ?`
+	q := `DELETE FROM post WHERE id = ?`
 	_, err := db.Exec(q, id)
 	return err
 }
@@ -136,7 +136,7 @@ func getPostsInfo() ([]Post, error) {
 	defer cancel()
 
 	var ps []Post
-	q := `select id, title, author, ctime, mtime from Post`
+	q := `select id, title, author, ctime, mtime from post`
 
 	rows, err := db.QueryContext(ctx, q)
 
