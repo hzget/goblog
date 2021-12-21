@@ -37,6 +37,7 @@ func initGlobals() {
 	initPagePrefix()
 	initRedisClient()
 	initDBHandler()
+	initDBTables()
 	initTemplate()
 }
 
@@ -90,6 +91,7 @@ func initDBHandler() {
 		AllowNativePasswords: true,
 		ParseTime:            true,
 		Loc:                  time.Local,
+		MultiStatements:      true,
 	}
 
 	var err error
@@ -140,4 +142,44 @@ func initTemplate() {
 	t, err := template.New("").Funcs(funcMap).ParseFiles(
 		"templ/view.html", "templ/edit.html", "templ/frontpage.html")
 	templates = template.Must(t, err)
+}
+
+func initDBTables() {
+
+	if !viper.GetBool("debug.initdbtable") {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), shortDuration)
+	defer cancel()
+
+	q := `ALTER DATABASE blog CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+        CREATE TABLE IF NOT EXISTS post(
+          id        INT AUTO_INCREMENT NOT NULL,
+          title     TINYTEXT NOT NULL,
+          author    VARCHAR(10) NOT NULL,
+          ctime     DATETIME NOT NULL,
+          mtime     DATETIME NOT NULL,
+          body      LONGTEXT,
+          PRIMARY KEY (id)
+        );
+        CREATE TABLE IF NOT EXISTS poststatistics(
+          postid    INT NOT NULL UNIQUE,
+          star1    INT NOT NULL DEFAULT 0,
+          star2    INT NOT NULL DEFAULT 0,
+          star3    INT NOT NULL DEFAULT 0,
+          star4    INT NOT NULL DEFAULT 0,
+          star5    INT NOT NULL DEFAULT 0,
+          PRIMARY KEY (postid)
+        );
+        CREATE TABLE IF NOT EXISTS users (
+          username  VARCHAR(10) NOT NULL,
+          password  VARCHAR(1024) NOT NULL,
+          rank  ENUM('bronze','silver','gold') NOT NULL,
+          PRIMARY KEY (username)
+        );`
+
+	if _, err := db.ExecContext(ctx, q); err != nil {
+		log.Fatal(err)
+	}
 }

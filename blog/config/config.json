@@ -1,10 +1,11 @@
 {
     "debug": {
         "page": true,
-        "viewcode": true
+        "viewcode": true,
+        "initdbtable": true
     },
     "page": {
-        "randomprefix": true
+        "randomprefix": false
     },
     "datastore": {
         "mysql": {
