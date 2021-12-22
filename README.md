@@ -44,7 +44,7 @@ please refer to the config file config/config.json
 
 #### if mysql and redis services are available
 
-modify the config file and run the command ***go run .*** :
+modify the config file (suppose open the flag: page.randomprefix) and run the command ***go run .*** :
 
 ```bash
 $ go run .
@@ -71,6 +71,8 @@ The user can run containers of goblog, mysql and redis.
 * get goblog logs:
 
     docker-compose logs -f goblog
+
+If all works well, you can visit http://localhost:8080
 
 #### if mysql and redis services are available as containers
 
