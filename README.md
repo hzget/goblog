@@ -38,7 +38,7 @@ You can change to others for corresponding service. Just only make very little c
 
 ### Configuration
 
-please the config file config/config.json
+please refer to the config file config/config.json
 
 ### run the code from within the host
 
@@ -79,6 +79,6 @@ suppose mysql and redis are in the network goblog\_default,
 run the goblog container with the following command:
 
 ```bash
-docker run -dp 8080:8080 --name goblog-running -w /app --network goblog_default goblog:latest sh -c "/app/goblog"
+docker run -dp 8080:8080 --name goblog-running -w /app --network goblog_default hzget/goblog:latest sh -c "/app/goblog"
 ```
 
