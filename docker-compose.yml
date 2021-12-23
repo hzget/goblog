@@ -3,22 +3,16 @@ version: "3.7"
 services:
   goblog:
     image: hzget/goblog:latest
-    # sleep 60 secs to wait for mysql and redis startup;
-    # the last commands is to keep container running even when goblog is killed;
-    # the user can dive into the container with
-    # the command "docker exec -it <container id> bash" to do something
-    entrypoint: ["/bin/sh","-c"]
-    command:
-      - |
-        export PATH=$PATH:/app
-        sleep 60
-        goblog
-        tail -f /dev/null
+    entrypoint: ["/app/goblog"]
+    depends_on:
+      - mysql
+      - redis
     ports:
       - 8080:8080
-      # for the debug mode, programmer can uncomment following two lines
+    # for the debug mode, programmer can uncomment corresponding lines
 #    volumes:
 #      - ./blog/config:/app/blog/config
+#      - ./:/app
 
   mysql:
     image: mysql:5.7
