@@ -64,9 +64,14 @@ http://youripaddr:8080/55e2e2fd-ae96-45b9-9249-6740416ebe18/
 
 The user can run containers of goblog, mysql and redis.
 
-* Then run all containers with docker-compose.yaml:
+* run all containers with docker-compose.yaml:
 
     docker-compose up -d
+    
+* if there's any errors, you can start the services in the following order:
+  * docker-compose up -d mysql
+  * docker-compose up -d redis
+  * docker-compose up -d goblog
 
 * get goblog logs:
 
@@ -83,4 +88,9 @@ run the goblog container with the following command:
 ```bash
 docker run -dp 8080:8080 --name goblog-running -w /app --network goblog_default hzget/goblog:latest sh -c "/app/goblog"
 ```
+
+if mysql and redis serivces are started up via the docker-compose.yml file,
+the you can start the goblog container with the same file:
+
+* docker-compose up -d goblog
 
