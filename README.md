@@ -38,13 +38,13 @@ You can change to others for corresponding service. Just only make very little c
 
 ### Configuration
 
-please the config file config/config.json
+please refer to the config file config/config.json
 
 ### run the code from within the host
 
 #### if mysql and redis services are available
 
-modify the config file and run the command ***go run .*** :
+modify the config file (suppose open the flag: page.randomprefix) and run the command ***go run .*** :
 
 ```bash
 $ go run .
@@ -72,6 +72,8 @@ The user can run containers of goblog, mysql and redis.
 
     docker-compose logs -f goblog
 
+If all works well, you can visit http://localhost:8080
+
 #### if mysql and redis services are available as containers
 
 suppose mysql and redis are in the network goblog\_default,
@@ -79,6 +81,6 @@ suppose mysql and redis are in the network goblog\_default,
 run the goblog container with the following command:
 
 ```bash
-docker run -dp 8080:8080 --name goblog-running -w /app --network goblog_default goblog:latest sh -c "/app/goblog"
+docker run -dp 8080:8080 --name goblog-running -w /app --network goblog_default hzget/goblog:latest sh -c "/app/goblog"
 ```
 
