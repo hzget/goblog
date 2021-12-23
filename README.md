@@ -65,10 +65,6 @@ http://youripaddr:8080/55e2e2fd-ae96-45b9-9249-6740416ebe18/
 The user can run containers of goblog, mysql and redis.
 
 * run all containers with docker-compose.yaml:
-
-    docker-compose up -d
-    
-* if there's any errors, you can start the services in the following order:
   * docker-compose up -d mysql
   * docker-compose up -d redis
   * docker-compose up -d goblog
