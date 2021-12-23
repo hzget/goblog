@@ -1,13 +1,44 @@
 package blog
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 func Run(addr string) {
 
 	initGlobals()
+
+	var srv = &http.Server{Addr: addr}
+
+	go startHttpServer(srv)
+
+	gracefulShutdown(srv)
+}
+
+func gracefulShutdown(srv *http.Server) {
+
+	sigint := make(chan os.Signal, 1)
+	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
+	s := <-sigint
+
+	log.Printf("received signal %v, the type is %T\n", s, s)
+
+	ctx, cancel := context.WithTimeout(context.Background(), shortDuration)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Printf("HTTP server Shutdown: %v\n", err)
+	}
+
+	log.Printf("the HTTP server Shutdown\n")
+}
+
+func startHttpServer(srv *http.Server) {
 
 	if debugViewCode {
 		http.Handle(sitePrefix+"/code/", http.StripPrefix(
@@ -33,6 +64,9 @@ func Run(addr string) {
 	http.HandleFunc(sitePrefix+"/superadmin", makeAdminHandler(superadminHandler))
 	http.HandleFunc(sitePrefix+"/saveranks", makeAdminHandler(saveranksHandler))
 
-	log.Fatal(http.ListenAndServe(addr, nil))
+	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+		log.Fatalf("HTTP server ListenAndServe: %v", err)
+	}
 
+	log.Printf("HTTP server stop recieving new request\n")
 }
