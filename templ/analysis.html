@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+    <script src="../templ/rs/js/jquery-3.6.0.min.js"></script>
+    <script>
+        function datalistValidator(author) {
+            var obj = $("#authors").find("option[value='" + author + "']");
+            if (obj != null && obj.length > 0) {
+                return true;
+            }
+            return false;
+        }
+
+        $(document).ready(function () {
+
+          $("#analyze").on('click', function(){
+
+            author = $("#author").val()
+            if (!datalistValidator(author)){
+                alert("please select a valid name")
+                $("#author").focus().select()
+                return
+            }
+
+            jsdata = JSON.stringify({"how": 1, "author": author })
+            $.ajax({url: "../analyze",
+                data: jsdata,
+                contentType : 'application/json',
+                type: 'POST',
+                success: function(result,status,xhr){
+                    alert(result)
+                    location.href = "../analysis"
+                },
+                error: function(xhr,status,error){
+                    alert("error: response from server: " + error)
+                }
+            })
+          }) 
+        })
+    </script>
+    <body>
+      <a href="..">&curvearrowleft; FrontPage</a>
+      <br><br>
+      <label for="browser">Whose articles to analyze?</label>
+      <input list="authors" name="author" id="author">
+      <datalist id="authors">
+      {{range $idx, $author := .}}
+        <option value="{{$author}}">
+      {{end}}
+        </datalist>
+      <br><br>
+      <div><input type="button" value="Analyze" id="analyze"></div>
+    </body>
+</html>

@@ -88,6 +88,10 @@ func (s *PostStatistics) getVote() (int, []float64) {
 	return vote, percent
 }
 
+// shall check if user exists in the db. otherwise, there maybe issues
+// for example, the login user is removed from db, but login session
+// is valid in redis, then the user sends a "create page" command,
+// this invalid user creates the page successfully!
 func (p *Post) save() error {
 
 	fail := func(err error) error {
@@ -160,4 +164,36 @@ func getPostsInfo() ([]Post, error) {
 	}
 
 	return ps, nil
+}
+
+func getAuthorsInfo() ([]string, error) {
+
+	ctx, cancel := context.WithTimeout(context.Background(), shortDuration)
+	defer cancel()
+
+	var info []string
+	q := `SELECT DISTINCT author FROM post ORDER BY author`
+
+	rows, err := db.QueryContext(ctx, q)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var a string
+		if err := rows.Scan(&a); err != nil {
+			return nil, err
+		}
+
+		info = append(info, a)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return info, nil
 }

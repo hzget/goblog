@@ -60,6 +60,7 @@ func startHttpServer(srv *http.Server) {
 	http.HandleFunc(sitePrefix+"/vote", voteHandler)
 
 	http.HandleFunc(sitePrefix+"/analysis", analysisHandler)
+	http.HandleFunc(sitePrefix+"/analyze", analyzeHandler)
 
 	http.HandleFunc(sitePrefix+"/superadmin", makeAdminHandler(superadminHandler))
 	http.HandleFunc(sitePrefix+"/saveranks", makeAdminHandler(saveranksHandler))

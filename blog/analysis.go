@@ -2,9 +2,21 @@ package blog
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
 )
+
+const (
+	AnalyzeByAuthor = 1
+)
+
+type AnalyzeHow int64
+
+type AnalyzeReq struct {
+	How    AnalyzeHow `json:"how"`
+	Author string     `json:"author"`
+}
 
 func analysisHandler(w http.ResponseWriter, r *http.Request) {
 	username, status := ValidateSession(w, r)
@@ -32,5 +44,58 @@ func analysisHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "the analysis service is developping now")
+	data, err := getAuthorsInfo()
+	if err != nil {
+		fmt.Fprintf(w, "get Authors info failed: %v", err)
+		return
+	}
+	renderTemplate(w, "analysis.html", data)
+}
+
+func analyzeHandler(w http.ResponseWriter, r *http.Request) {
+	user, status := ValidateSession(w, r)
+	switch status {
+	case SessionUnauthorized:
+		http.Error(w, "please log in first", http.StatusUnauthorized)
+		return
+	case SessionInternalError:
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	a := &AnalyzeReq{}
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(a); err != nil {
+		fmt.Println(err)
+		http.Error(w, fmt.Sprintf("failed to decode request %v", err), http.StatusBadRequest)
+		return
+	}
+
+	userinfo, err := getUserInfo(user)
+	switch {
+	case err == sql.ErrNoRows:
+		fmt.Printf("loadRank user %s: no such user\n", user)
+	case err != nil:
+		fmt.Printf("failed to scan rows of loadRank %s: %v\n", user, err)
+	default:
+	}
+
+	authorinfo, err := getUserInfo(a.Author)
+	switch {
+	case err == sql.ErrNoRows:
+		fmt.Printf("loadRank user %s: no such author\n", a.Author)
+	case err != nil:
+		fmt.Printf("failed to scan rows of loadRank %s: %v\n", a.Author, err)
+	default:
+	}
+
+	if getRankInt(userinfo.Rank) < getRankInt(authorinfo.Rank) {
+		fmt.Fprintf(w, "The %s user %s want to analyze %s author %s's articles."+
+			"This analysis is not allowed\n",
+			userinfo.Rank, user, authorinfo.Rank, a.Author)
+		return
+	}
+
+	fmt.Fprintf(w, "success")
 }

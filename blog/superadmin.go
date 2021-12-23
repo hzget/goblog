@@ -12,6 +12,19 @@ type UserInfo struct {
 	Rank     string `json:"rank"`
 }
 
+func getRankInt(rank string) int64 {
+	switch rank {
+	case "bronze":
+		return 0
+	case "silver":
+		return 1
+	case "gold":
+		return 2
+	default:
+		return -1
+	}
+}
+
 func getUserInfo(username string) (*UserInfo, error) {
 
 	info := &UserInfo{Username: username}
