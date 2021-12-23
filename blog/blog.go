@@ -17,16 +17,16 @@ func Run(addr string) {
 
 	go startHttpServer(srv)
 
-	gracefulShutdown(srv)
+	gracefullyShutdown(srv)
 }
 
-func gracefulShutdown(srv *http.Server) {
+func gracefullyShutdown(srv *http.Server) {
 
 	sigint := make(chan os.Signal, 1)
 	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
 	s := <-sigint
 
-	log.Printf("received signal %v, the type is %T\n", s, s)
+	log.Printf("receive signal %v\n", s)
 
 	ctx, cancel := context.WithTimeout(context.Background(), shortDuration)
 	defer cancel()
@@ -35,7 +35,7 @@ func gracefulShutdown(srv *http.Server) {
 		log.Printf("HTTP server Shutdown: %v\n", err)
 	}
 
-	log.Printf("the HTTP server Shutdown\n")
+	log.Printf("HTTP server is shutdown\n")
 }
 
 func startHttpServer(srv *http.Server) {
@@ -68,5 +68,5 @@ func startHttpServer(srv *http.Server) {
 		log.Fatalf("HTTP server ListenAndServe: %v", err)
 	}
 
-	log.Printf("HTTP server stop recieving new request\n")
+	log.Printf("HTTP server stop receiving new request\n")
 }

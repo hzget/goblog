@@ -28,7 +28,7 @@ func analysisHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil || userinfo.Rank == "bronze" {
-		http.Error(w, "please buy the analysis service befor using it", http.StatusUnauthorized)
+		http.Error(w, "please buy the analysis service before using it", http.StatusUnauthorized)
 		return
 	}
 
