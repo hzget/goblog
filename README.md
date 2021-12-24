@@ -23,7 +23,8 @@ It can help them to learn this system and make the debug life easier.
 As a reader, the gold and silver user can
 get AI analysis of article(s) on the blog.
 
-As a programmer, the user can develop the AI functions.
+The user can ask to analyze articles of an specific author
+and the request will sent to data-analysis center.
 
 this module is under developping now
 
