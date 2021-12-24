@@ -1,14 +1,15 @@
 package blog
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	pb "github.com/hzget/analysisdriver"
+	"google.golang.org/grpc"
+	"log"
 	"net/http"
-)
-
-const (
-	AnalyzeByAuthor = 1
+	"time"
 )
 
 type AnalyzeHow int64
@@ -97,5 +98,30 @@ func analyzeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "success")
+	score := AnalyzeByAuthor(a.Author)
+
+	fmt.Fprintf(w, "result %d", score)
+}
+
+func AnalyzeByAuthor(name string) int32 {
+
+	conn, err := grpc.Dial(dataAnalysisAddress, grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
+	}
+	defer conn.Close()
+
+	c := pb.NewDataAnalysisClient(conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	r, err := c.AnalyzeByAuthor(ctx, &pb.Author{Name: name})
+	if err != nil {
+		log.Fatalf("could not analyze: %v", err)
+	}
+
+	log.Printf("Analysis result: %d\n", r.GetScore())
+
+	return r.GetScore()
 }

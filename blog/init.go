@@ -30,6 +30,7 @@ var funcMap template.FuncMap
 var randomSitePrefix = false
 var sitePrefix string
 var siteRe string
+var dataAnalysisAddress string
 
 func initGlobals() {
 	getConfig()
@@ -38,6 +39,7 @@ func initGlobals() {
 	initRedisClient()
 	initDBHandler()
 	initDBTables()
+	initDataAnalysis()
 	initTemplate()
 }
 
@@ -83,10 +85,10 @@ func initPagePrefix() {
 func initDBHandler() {
 
 	cfg := mysql.Config{
-		Addr:                 viper.GetString("datastore.mysql.addr"),
-		User:                 viper.GetString("datastore.mysql.user"),
-		Passwd:               viper.GetString("datastore.mysql.passwd"),
-		DBName:               viper.GetString("datastore.mysql.dbname"),
+		Addr:                 viper.GetString("service.mysql.addr"),
+		User:                 viper.GetString("service.mysql.user"),
+		Passwd:               viper.GetString("service.mysql.passwd"),
+		DBName:               viper.GetString("service.mysql.dbname"),
 		Net:                  "tcp",
 		AllowNativePasswords: true,
 		ParseTime:            true,
@@ -115,7 +117,7 @@ func initRedisClient() {
 	ctx := context.Background()
 
 	rdb = redis.NewClient(&redis.Options{
-		Addr:     viper.GetString("datastore.redis.addr"),
+		Addr:     viper.GetString("service.redis.addr"),
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
@@ -125,6 +127,10 @@ func initRedisClient() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func initDataAnalysis() {
+	dataAnalysisAddress = viper.GetString("service.data-analysis.addr")
 }
 
 func initFuncMap() {

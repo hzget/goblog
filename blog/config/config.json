@@ -7,7 +7,7 @@
     "page": {
         "randomprefix": false
     },
-    "datastore": {
+    "service": {
         "mysql": {
             "addr":     "mysql",
             "user":     "blog",
@@ -16,6 +16,9 @@
         },
         "redis": {
             "addr": "redis:6379"
+        },
+        "data-analysis":{
+            "addr":     "192.168.1.12:50051"
         }
     }
 }
