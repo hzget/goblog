@@ -3,7 +3,13 @@
 A blog system used for sharing ideas and analyzing
 these articles via AI algorithms.
 
-## services
+## UI
+
+view a post | edit a post | analysis
+:----------:|:-----------:|:-------:
+![view](./pic/view.png)|![edit](./pic/edit.png)|![analysis](./pic/analysis.png)
+
+## functions
 
 ### work as a blog site
 
