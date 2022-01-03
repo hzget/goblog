@@ -34,6 +34,7 @@ this module is under developping now
 
 * mysql for storing blog posts
 * redis for storing cache -- login sessions
+* hzget/analysis for analyzing the data in the data center
 
 You can change to others for corresponding service. Just only make very little code changes.
 
@@ -43,7 +44,7 @@ please refer to the config file config/config.json
 
 ### run the code from within the host
 
-#### if mysql and redis services are available
+#### if prerequisites services are available
 
 modify the config file (suppose open the flag: page.randomprefix) and run the command ***go run .*** :
 
@@ -63,11 +64,9 @@ http://youripaddr:8080/55e2e2fd-ae96-45b9-9249-6740416ebe18/
 
 #### if mysql and redis services are not available
 
-The user can run containers of goblog, mysql and redis.
+The user can run containers of goblog, mysql, redis and analysis.
 
 * run all containers with docker-compose.yaml:
-  * docker-compose up -d mysql
-  * docker-compose up -d redis
   * docker-compose up -d goblog
 
 * get goblog logs:
