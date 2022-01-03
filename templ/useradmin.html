@@ -1,4 +1,6 @@
 <!DOCTYPE html>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="./templ/rs/css/w3.css">
     <head>
     <style>
         table {
@@ -53,8 +55,15 @@
     </script>
     </head>
     <body>
-        <a href="./">&curvearrowleft; FrontPage</a>
-        <h1>Manage the ranks of users</h1>
+        <div class="w3-container w3-center w3-blue">
+        <h1>Go Blog</h1>
+        <p id="welcome">Welcome</p>
+        </div>
+        <div id="navbar" class="w3-bar w3-black">
+          <a href="." class="w3-bar-item w3-button w3-mobile">Home</a>
+        </div>
+        <div class="w3-container">
+        <h3>Manage the ranks of users</h1>
         <form>
         <div>
         <table>
@@ -87,8 +96,11 @@
         </table>
         </div>
         <br><br>
-        <div><input type="button" onclick="UpdateAll()" value="UpdateAll">
-        <input type="Reset"></div>
+        <div>
+            <input type="button" class="w3-button w3-dark-grey" onclick="UpdateAll()" value="UpdateAll">
+            <input type="reset" class="w3-button w3-dark-grey" value="Reset">
+        </div>
         </form>
+        </div>
     </body>
 </html>

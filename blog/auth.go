@@ -84,7 +84,7 @@ func makeAuthHandler(fn func(http.ResponseWriter, *http.Request, *Credentials)) 
 		decoder := json.NewDecoder(r.Body)
 		decoder.DisallowUnknownFields()
 		if err := decoder.Decode(creds); err != nil {
-			http.Error(w, fmt.Sprintf("failed to decode request %v", err), http.StatusBadRequest)
+			printAlert(w, fmt.Sprintf("failed to decode request %v", err), http.StatusBadRequest)
 			return
 		}
 
@@ -94,13 +94,13 @@ func makeAuthHandler(fn func(http.ResponseWriter, *http.Request, *Credentials)) 
 		isvalid, err := creds.Validate()
 		if err != nil {
 			fmt.Printf("validate err:%v\n", err)
-			http.Error(w, "internal error happened when validate credentials",
+			printAlert(w, "internal error happened when validate credentials",
 				http.StatusInternalServerError)
 			return
 		}
 
 		if !isvalid {
-			http.Error(w, "invalid username", http.StatusBadRequest)
+			printAlert(w, "invalid username", http.StatusBadRequest)
 			return
 		}
 
@@ -113,18 +113,18 @@ func signupHandler(w http.ResponseWriter, r *http.Request, creds *Credentials) {
 	exist, err := checkUserExist(creds.Username)
 	if err != nil {
 		fmt.Printf("fail to check user existance in database:%v\n", err)
-		http.Error(w, "Internal Error", http.StatusInternalServerError)
+		printAlert(w, "Internal Error", http.StatusInternalServerError)
 		return
 	}
 
 	if exist {
-		http.Error(w, "user already exists, please choose another name", http.StatusBadRequest)
+		printAlert(w, "user already exists, please choose another name", http.StatusBadRequest)
 		return
 	}
 
 	if err = creds.save(); err != nil {
 		fmt.Printf("fail to save creds %v, err info:%v\n", creds, err)
-		http.Error(w, "Internal Error", http.StatusInternalServerError)
+		printAlert(w, "Internal Error", http.StatusInternalServerError)
 		return
 	}
 
@@ -136,17 +136,17 @@ func signinHandler(w http.ResponseWriter, r *http.Request, creds *Credentials) {
 	hash, err := getPassword(creds.Username)
 	switch {
 	case err == sql.ErrNoRows:
-		http.Error(w, fmt.Sprintf("no such user %v", creds.Username), http.StatusUnauthorized)
+		printAlert(w, fmt.Sprintf("no such user %v", creds.Username), http.StatusUnauthorized)
 		return
 	case err != nil:
 		fmt.Printf("fail to get password for user %v\n", creds.Username)
-		http.Error(w, "Internal Error", http.StatusInternalServerError)
+		printAlert(w, "Internal Error", http.StatusInternalServerError)
 		return
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(hash), []byte(creds.Password))
 	if err != nil {
-		http.Error(w, "failed to validate password", http.StatusUnauthorized)
+		printAlert(w, "failed to validate password", http.StatusUnauthorized)
 		return
 	}
 
@@ -156,18 +156,20 @@ func signinHandler(w http.ResponseWriter, r *http.Request, creds *Credentials) {
 	err = rdb.Set(context.Background(), token, creds.Username, sessionTimeout).Err()
 	if err != nil {
 		fmt.Printf("fail to set token for user %v\n", creds.Username)
-		http.Error(w, "Internal Error", http.StatusInternalServerError)
+		printAlert(w, "Internal Error", http.StatusInternalServerError)
 		return
 	}
 
 	http.SetCookie(w, &http.Cookie{
 		Name:    "session_token",
 		Value:   token,
+		Path:    "/",
 		Expires: time.Now().Add(sessionTimeout),
 	})
 	http.SetCookie(w, &http.Cookie{
 		Name:    "user",
 		Value:   creds.Username,
+		Path:    "/",
 		Expires: time.Now().Add(sessionTimeout),
 	})
 }
@@ -220,14 +222,14 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	case err != nil:
 		fmt.Printf("internal error: %v\n", err)
-		http.Error(w, "Internal Error", http.StatusInternalServerError)
+		printAlert(w, "Internal Error", http.StatusInternalServerError)
 		return
 	}
 
 	err = rdb.Del(context.Background(), c.Value).Err()
 	if err != nil {
 		fmt.Printf("fail to del token %v\n", c.Value)
-		http.Error(w, "Internal Error", http.StatusInternalServerError)
+		printAlert(w, "Internal Error", http.StatusInternalServerError)
 		return
 	}
 
@@ -242,6 +244,7 @@ func clearCookies(w http.ResponseWriter) {
 		Name:    "session_token",
 		Value:   "",
 		MaxAge:  -1,
+		Path:    "/",
 		Expires: expiretime,
 	})
 
@@ -249,6 +252,7 @@ func clearCookies(w http.ResponseWriter) {
 		Name:    "user",
 		Value:   "",
 		MaxAge:  -1,
+		Path:    "/",
 		Expires: expiretime,
 	})
 

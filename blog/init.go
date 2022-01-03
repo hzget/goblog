@@ -146,7 +146,8 @@ func initTemplate() {
 	}
 
 	t, err := template.New("").Funcs(funcMap).ParseFiles(
-		"templ/view.html", "templ/edit.html", "templ/frontpage.html")
+		"templ/view.html", "templ/edit.html", "templ/frontpage.html",
+		"templ/analysis.html", "templ/useradmin.html", "templ/alert.html")
 	templates = template.Must(t, err)
 }
 

@@ -1,12 +1,72 @@
 <!DOCTYPE html>
-    <script src="../templ/rs/js/jquery-3.6.0.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="./templ/rs/css/w3.css">
+    <script src="./templ/rs/js/jquery-3.6.0.min.js"></script>
     <script>
-        function datalistValidator(author) {
-            var obj = $("#authors").find("option[value='" + author + "']");
-            if (obj != null && obj.length > 0) {
-                return true;
+        function selectItem(item) {
+            txtValue = item.textContent || item.innerText;
+            document.getElementById("author").value = txtValue;
+            closeList();
+        }
+        function closeList() {
+            ul = document.getElementById("authors");
+            li = ul.getElementsByTagName("li");
+            for (i = 0; i < li.length; i++) {
+                li[i].style.display = "none";
             }
+        }
+        function filterName(event) {
+            var input, filter, ul, li, a, i;
+            input = document.getElementById("author");
+            filter = input.value.toUpperCase();
+            ul = document.getElementById("authors");
+            li = ul.getElementsByTagName("li");
+            var count = 0;
+            var match = "";
+            for (i = 0; i < li.length; i++) {
+                txtValue = li[i].textContent || li[i].innerText;
+                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                    li[i].style.display = "";
+                    count++;
+                    match = txtValue;
+                } else {
+                    li[i].style.display = "none";
+                }
+            }
+
+            if (event.key == "Enter" && count == 1) {
+                input.value = match;
+                closeList();
+                return
+            }
+
+        }
+
+        function datalistValidator(author) {
+
+            li = $('li:contains("'+author+'")')
+            if(author.length < 3 || li.length < 1) {
+                return false;
+            }
+
+            for (i = 0; i < li.length; i++) {
+                txtValue = li[i].textContent || li[i].innerText;
+                if (author == txtValue) {
+                    return true;
+                }
+            }
+
             return false;
+        }
+
+        function confirmResult(){
+            document.getElementById('dialogbox').style.display='none'
+        }
+
+        function displayDialog(header, info){
+            document.getElementById("dialogheader").innerHTML = header
+            document.getElementById("dialoginfo").innerHTML = info
+            document.getElementById('dialogbox').style.display='block'
         }
 
         $(document).ready(function () {
@@ -15,38 +75,66 @@
 
             author = $("#author").val()
             if (!datalistValidator(author)){
-                alert("please select a valid name")
+                displayDialog("Alert!", "please select a valid name")
                 $("#author").focus().select()
                 return
             }
 
             jsdata = JSON.stringify({"how": 1, "author": author })
-            $.ajax({url: "../analyze",
+            $.ajax({url: "./analyze",
                 data: jsdata,
                 contentType : 'application/json',
                 type: 'POST',
                 success: function(result,status,xhr){
-                    alert(result)
-                    location.href = "../analysis"
+                    displayDialog("Analysis Result", result);
                 },
                 error: function(xhr,status,error){
-                    alert("error: response from server: " + error)
+                    displayDialog("Error Response", error)
                 }
             })
           }) 
         })
     </script>
     <body>
-      <a href="..">&curvearrowleft; FrontPage</a>
-      <br><br>
-      <label for="browser">Whose articles to analyze?</label>
-      <input list="authors" name="author" id="author">
-      <datalist id="authors">
+        <div class="w3-container w3-center w3-blue">
+        <h1>Go Blog</h1>
+        <p id="welcome">Welcome</p>
+        </div>
+        <div id="navbar" class="w3-bar w3-black">
+            <a href="." class="w3-bar-item w3-button w3-mobile">Home</a>
+        </div>
+
+        <div class="w3-container">
+            <h3>Analyze the posts via NLP</h3>
+            <p>Analyze posts of a specific author</p>
+
+            <input class="w3-input w3-border w3-padding" type="text" placeholder="enter author name" id="author" onkeyup="filterName(event)">
+            <ul class="w3-ul w3-margin-top w3-hoverable" id="authors">
       {{range $idx, $author := .}}
-        <option value="{{$author}}">
+            <li onclick="selectItem(this)">{{$author}}</li>
       {{end}}
-        </datalist>
-      <br><br>
-      <div><input type="button" value="Analyze" id="analyze"></div>
+            </ul>
+
+            <br><br>
+            <div><input type="button" value="Analyze" id="analyze" class="w3-button w3-dark-grey"></div>
+        </div>
+        <div id="dialogbox" class="w3-modal">
+          <div class="w3-modal-content">
+
+            <header class="w3-container w3-grey">
+              <span onclick="confirmResult()" class="w3-button w3-display-topright">&times;</span>
+              <h4 id="dialogheader">Analysis Result</h4>
+            </header>
+
+            <div class="w3-container">
+              <p id="dialoginfo">Some text..</p>
+            </div>
+
+            <footer class="w3-container w3-grey">
+              <p></p>
+            </footer>
+
+          </div>
+        </div>
     </body>
 </html>

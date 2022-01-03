@@ -1,40 +1,12 @@
 <!DOCTYPE html>
     <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="../templ/rs/css/w3.css">
+    <link rel="stylesheet" href="../templ/rs/css/ratings.css">
     <style>
         sub {
             vertical-align: sub;
             font-size: xx-small;
-        }
-        .ratings {
-          list-style-type: none;
-          margin: 0;
-          padding: 0;
-          width: 100%;
-          direction: rtl;
-          text-align: left;
-        }
-
-        .star {
-          position: relative;
-          line-height: 30px;
-          display: inline-block;
-          transition: color 0.2s ease;
-          color: #ebebeb;
-        }
-
-        .star:before {
-          content: '\2605';
-          width: 30px;
-          height: 30px;
-          font-size: 30px;
-        }
-
-        .star:hover,
-        .star.selected,
-        .star:hover ~ .star,
-        .star.selected ~ .star{
-          transition: color 0.8s ease;
-          color: yellow;
         }
     </style>
     <script src="../templ/rs/js/jquery-3.6.0.min.js"></script>
@@ -67,8 +39,18 @@
     </script>
     </head>
     <body>
-        <a href="..">&curvearrowleft; FrontPage</a>
-        <h1 id="title" value={{.Id}} >
+        <div class="w3-container w3-center w3-blue">
+        <h1>Go Blog</h1>
+        <p id="welcome">Welcome</p>
+        </div>
+        <div id="navbar" class="w3-bar w3-black">
+          <a href=".." class="w3-bar-item w3-button w3-mobile">Home</a>
+          <!--
+          <a href="../analysis" class="w3-bar-item w3-button w3-mobile">Data Analysis</a>
+          -->
+        </div>
+        <div class="w3-container">
+        <h3 id="title">
 {{if .Edit}}
         <a href="../edit/{{.Id}}">{{printf "%s" .Title}}</a>
 {{else}}
@@ -104,5 +86,16 @@
             <div><input type="submit" value="[x]Delete"></div>
         </form>
         {{end}}
+        </div>
+        <!--
+        <iframe src="../templ/rs/html/footer.html" title="goblog footer" id="footer">
+        </iframe>
+        -->
+        <!--
+        <div class="w3-container w3-bottom w3-blue">
+          <h5>About</h5>
+          <p>A blog system implemented via golang</p>
+        </div>
+        -->
     </body>
 </html>

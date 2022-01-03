@@ -1,23 +1,19 @@
 <!DOCTYPE html>
     <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="./templ/rs/css/w3.css">
+    <!--
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
     <link rel="stylesheet" href="./templ/rs/css/nav.css">
+    -->
     <link rel="stylesheet" href="./templ/rs/css/auth.css">
     <script src="./templ/rs/js/auth.js"></script>
     </head>
     <body onload=checkCookie()>
-        <div class="header">
-        <h1>FrontPage</h1>
+        <div class="w3-container w3-center w3-blue">
+        <h1>Go Blog</h1>
         <p id="welcome"></p>
-        </div>
-        <div id="navbar">
-          <a class="active" href="javascript:void(0)">Home</a>
-          <a href="./edit/0">[+]New</a>
-          <a href="./superadmin">UserAdmin</a>
-          <a href="./analysis">Data Analysis</a>
-          {{if .ViewCode}}
-          <a href="./code">Code Browsing</a>
-          {{end}}
         </div>
         <div id="login">
             <button class="open-button" onclick="openForm()">Login&nbsp;&nbsp;/&nbsp;&nbsp;Register</button>
@@ -40,6 +36,15 @@
         <div id="logout">
             <button class="open-button" onclick="logout()">Logout</button>
         </div>
+        <div id="navbar" class="w3-bar w3-black">
+          <a href="javascript:void(0)" class="w3-bar-item w3-button w3-mobile">Home</a>
+          <a href="./edit/0" class="w3-bar-item w3-button w3-mobile">[+]New</a>
+          <a href="./superadmin" class="w3-bar-item w3-button w3-mobile">UserAdmin</a>
+          <a href="./analysis" class="w3-bar-item w3-button w3-mobile">Data Analysis</a>
+          {{if .ViewCode}}
+          <a href="./code" class="w3-bar-item w3-button w3-mobile">Code Browsing</a>
+          {{end}}
+        </div>
  
         <div class="content">
         <p>
@@ -53,6 +58,10 @@
         </h4>
         {{end}}
         </p>
+        </div>
+        <div class="w3-container w3-bottom w3-blue">
+          <h5>About</h5>
+          <p>A blog system implemented via golang</p>
         </div>
     </body>
 </html>

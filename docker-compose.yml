@@ -7,6 +7,7 @@ services:
     depends_on:
       - mysql
       - redis
+#      - analysis
     ports:
       - 8080:8080
     # for the debug mode, programmer can uncomment corresponding lines
@@ -32,6 +33,10 @@ services:
       - goblog-redis-data:/data
     environment:
       - ALLOW_EMPTY_PASSWORD=yes
+
+  analysis:
+    image: hzget/analysis:latest
+    entrypoint: ["python", "analysis_server.py"]
 
 volumes:
   goblog-mysql-data:

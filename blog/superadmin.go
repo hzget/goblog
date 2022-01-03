@@ -74,7 +74,7 @@ func superadminHandler(w http.ResponseWriter, r *http.Request) {
 
 	data, err := getUsersInfo()
 	if err != nil {
-		fmt.Fprintf(w, "load Page info failed: %v", err)
+		printAlert(w, fmt.Sprintf("get Users info failed: %v", err), http.StatusInternalServerError)
 		return
 	}
 
@@ -90,13 +90,13 @@ func saveranksHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&data); err != nil {
-		http.Error(w, fmt.Sprintf("failed to decode request %v", err), http.StatusBadRequest)
+		printAlert(w, fmt.Sprintf("failed to decode request %v", err), http.StatusBadRequest)
 		fmt.Println(err)
 		return
 	}
 
 	fail := func(err error) {
-		http.Error(w, "internal error: failed to save", http.StatusInternalServerError)
+		printAlert(w, "internal error: failed to save", http.StatusInternalServerError)
 		fmt.Printf("internal error %v\n", err)
 		return
 	}
@@ -134,15 +134,15 @@ func makeAdminHandler(fn func(http.ResponseWriter, *http.Request)) http.HandlerF
 		username, status := ValidateSession(w, r)
 		switch status {
 		case SessionUnauthorized:
-			http.Error(w, "please log in first", http.StatusUnauthorized)
+			printAlert(w, "please log in first", http.StatusUnauthorized)
 			return
 		case SessionInternalError:
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			printAlert(w, "internal error", http.StatusInternalServerError)
 			return
 		}
 
 		if !IsAdmin(username) {
-			http.Error(w, "only the admin can make these operations", http.StatusBadRequest)
+			printAlert(w, "only the admin can make these operations", http.StatusBadRequest)
 			return
 		}
 

@@ -21,13 +21,12 @@ type AnalyzeReq struct {
 
 func analysisHandler(w http.ResponseWriter, r *http.Request) {
 	username, status := ValidateSession(w, r)
-	//fmt.Println(username, status)
 	switch status {
 	case SessionUnauthorized:
-		http.Error(w, "please log in first", http.StatusUnauthorized)
+		printAlert(w, "please log in first", http.StatusUnauthorized)
 		return
 	case SessionInternalError:
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		printAlert(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
@@ -41,13 +40,14 @@ func analysisHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil || userinfo.Rank == "bronze" {
-		http.Error(w, "please buy the analysis service before using it", http.StatusUnauthorized)
+		printAlert(w, "please buy the analysis service before using it", http.StatusUnauthorized)
 		return
 	}
 
 	data, err := getAuthorsInfo()
 	if err != nil {
-		fmt.Fprintf(w, "get Authors info failed: %v", err)
+		printAlert(w, fmt.Sprintf("get Authors info failed: %v", err),
+			http.StatusInternalServerError)
 		return
 	}
 	renderTemplate(w, "analysis.html", data)
@@ -57,10 +57,10 @@ func analyzeHandler(w http.ResponseWriter, r *http.Request) {
 	user, status := ValidateSession(w, r)
 	switch status {
 	case SessionUnauthorized:
-		http.Error(w, "please log in first", http.StatusUnauthorized)
+		printAlert(w, "please log in first", http.StatusUnauthorized)
 		return
 	case SessionInternalError:
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		printAlert(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
@@ -69,7 +69,7 @@ func analyzeHandler(w http.ResponseWriter, r *http.Request) {
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(a); err != nil {
 		fmt.Println(err)
-		http.Error(w, fmt.Sprintf("failed to decode request %v", err), http.StatusBadRequest)
+		printAlert(w, fmt.Sprintf("failed to decode request %v", err), http.StatusBadRequest)
 		return
 	}
 

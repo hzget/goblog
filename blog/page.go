@@ -14,6 +14,7 @@ package blog
  */
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
@@ -38,7 +39,7 @@ func frontpageHandler(w http.ResponseWriter, r *http.Request) {
 
 	data, err := getFrontpageData()
 	if err != nil {
-		fmt.Fprintf(w, "load post info failed: %v", err)
+		printAlert(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -49,14 +50,18 @@ func viewHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 
 	canView := info.getPermisson() >= PermView
 	if !canView {
-		http.Error(w, "the user is not allowed to view post", http.StatusBadRequest)
+		printAlert(w, "the user is not allowed to view post", http.StatusBadRequest)
 		return
 	}
 
 	data, err := getViewData(info)
-	if err != nil {
+	switch {
+	case err == sql.ErrNoRows:
+		printAlert(w, err.Error(), http.StatusBadRequest)
+		return
+	case err != nil:
 		fmt.Println(err)
-		fmt.Fprintf(w, "load page failed: %v", err)
+		printAlert(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -68,7 +73,7 @@ func editHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 
 	canEdit := info.getPermisson() == PermEdit
 	if !canEdit {
-		http.Error(w, "the user is not allowed to edit post", http.StatusBadRequest)
+		printAlert(w, "the user is not allowed to edit post", http.StatusBadRequest)
 		return
 	}
 
@@ -84,7 +89,7 @@ func saveHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 
 	canEdit := info.getPermisson() == PermEdit
 	if !canEdit {
-		http.Error(w, "the user is not allowed to edit and save post", http.StatusBadRequest)
+		printAlert(w, "the user is not allowed to edit and save post", http.StatusBadRequest)
 		return
 	}
 
@@ -97,7 +102,7 @@ func saveHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 	p := &Post{Id: info.Id, Title: title, Body: r.FormValue("body"),
 		Author: info.Username}
 	if err := p.save(); err != nil {
-		fmt.Fprintf(w, "save file failed: %v", err)
+		printAlert(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -108,12 +113,12 @@ func deleteHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 
 	canDel := info.getPermisson() == PermDelete
 	if !canDel {
-		http.Error(w, "the user is not allowed to delete post", http.StatusBadRequest)
+		printAlert(w, "the user is not allowed to delete post", http.StatusBadRequest)
 		return
 	}
 
 	if err := DeletePost(info.Id); err != nil {
-		fmt.Fprintf(w, "delete post failed: %v", err)
+		printAlert(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -133,7 +138,7 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request, *PageInfo)) http.Ha
 	return func(w http.ResponseWriter, r *http.Request) {
 		title, err := getId(r.URL.Path)
 		if err != nil {
-			http.Error(w, "the pathname is invalid: "+r.URL.Path, http.StatusBadRequest)
+			printAlert(w, "the pathname is invalid: "+r.URL.Path, http.StatusBadRequest)
 			return
 		}
 		id, err := strconv.Atoi(title)
@@ -141,10 +146,10 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request, *PageInfo)) http.Ha
 		username, status := ValidateSession(w, r)
 		switch status {
 		case SessionUnauthorized:
-			http.Error(w, "please log in first", http.StatusUnauthorized)
+			printAlert(w, "please log in first", http.StatusUnauthorized)
 			return
 		case SessionInternalError:
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			printAlert(w, "internal error", http.StatusInternalServerError)
 			return
 		}
 

@@ -36,14 +36,7 @@ func loadPost(id int64) (*Post, error) {
 	row := db.QueryRowContext(ctx, q, id)
 	err := row.Scan(&p.Id, &p.Title, &p.Author, &p.Date, &p.Modified, &p.Body)
 
-	switch {
-	case err == sql.ErrNoRows:
-		return nil, fmt.Errorf("loadPost id %d: no such id", id)
-	case err != nil:
-		return nil, fmt.Errorf("failed to scan rows of loadPost %d: %v", id, err)
-	default:
-		return &p, nil
-	}
+	return &p, err
 }
 
 func loadPostStatistics(id int64) (*PostStatistics, error) {
