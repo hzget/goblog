@@ -13,7 +13,7 @@ RUN go build -o ./goblog
 ##
 ## Deploy
 ##
-FROM ubuntu:latest
+FROM ubuntu:20.04
 
 WORKDIR /app
 

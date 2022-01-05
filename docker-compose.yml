@@ -2,12 +2,12 @@ version: "3.7"
 
 services:
   goblog:
-    image: hzget/goblog:latest
+    image: hzget/goblog:1.0
     entrypoint: ["/app/goblog"]
     depends_on:
       - mysql
       - redis
-#      - analysis
+      - analysis
     ports:
       - 8080:8080
     # for the debug mode, programmer can uncomment corresponding lines
