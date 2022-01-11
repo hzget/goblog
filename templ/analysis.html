@@ -2,6 +2,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="./templ/rs/css/w3.css">
     <script src="./templ/rs/js/jquery-3.6.0.min.js"></script>
+    <script src="./templ/rs/js/dialog.js"></script>
     <script>
         function selectItem(item) {
             txtValue = item.textContent || item.innerText;
@@ -59,23 +60,13 @@
             return false;
         }
 
-        function confirmResult(){
-            document.getElementById('dialogbox').style.display='none'
-        }
-
-        function displayDialog(header, info){
-            document.getElementById("dialogheader").innerHTML = header
-            document.getElementById("dialoginfo").innerHTML = info
-            document.getElementById('dialogbox').style.display='block'
-        }
-
         $(document).ready(function () {
 
           $("#analyze").on('click', function(){
 
             author = $("#author").val()
             if (!datalistValidator(author)){
-                displayDialog("Alert!", "please select a valid name")
+                displayDialog("Alert!", "please select a valid name", "w3-red")
                 $("#author").focus().select()
                 return
             }
@@ -89,21 +80,13 @@
                     displayDialog("Analysis Result", result);
                 },
                 error: function(xhr,status,error){
-                    displayDialog("Error Response", error)
+                    displayDialog(error, xhr.responseText , "w3-red")
                 }
             })
           }) 
         })
     </script>
     <body>
-        <div class="w3-container w3-center w3-blue">
-        <h1>Go Blog</h1>
-        <p id="welcome">Welcome</p>
-        </div>
-        <div id="navbar" class="w3-bar w3-black">
-            <a href="." class="w3-bar-item w3-button w3-mobile">Home</a>
-        </div>
-
         <div class="w3-container">
             <h3>Analyze the posts via NLP</h3>
             <p>Analyze posts of a specific author</p>
@@ -117,24 +100,6 @@
 
             <br><br>
             <div><input type="button" value="Analyze" id="analyze" class="w3-button w3-dark-grey"></div>
-        </div>
-        <div id="dialogbox" class="w3-modal">
-          <div class="w3-modal-content">
-
-            <header class="w3-container w3-grey">
-              <span onclick="confirmResult()" class="w3-button w3-display-topright">&times;</span>
-              <h4 id="dialogheader">Analysis Result</h4>
-            </header>
-
-            <div class="w3-container">
-              <p id="dialoginfo">Some text..</p>
-            </div>
-
-            <footer class="w3-container w3-grey">
-              <p></p>
-            </footer>
-
-          </div>
         </div>
     </body>
 </html>

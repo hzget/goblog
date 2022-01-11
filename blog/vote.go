@@ -17,10 +17,10 @@ func voteHandler(w http.ResponseWriter, r *http.Request) {
 	_, status := ValidateSession(w, r)
 	switch status {
 	case SessionUnauthorized:
-		printAlert(w, "please log in first", http.StatusUnauthorized)
+		http.Error(w, "please log in first", http.StatusUnauthorized)
 		return
 	case SessionInternalError:
-		printAlert(w, "internal error", http.StatusInternalServerError)
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
@@ -29,14 +29,14 @@ func voteHandler(w http.ResponseWriter, r *http.Request) {
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(v); err != nil {
 		fmt.Println(err)
-		printAlert(w, fmt.Sprintf("failed to decode request %v", err), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("failed to decode request %v", err), http.StatusBadRequest)
 		return
 	}
 
 	err := v.save()
 	if err != nil {
 		fmt.Println(err)
-		printAlert(w, "internal error", http.StatusInternalServerError)
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 	fmt.Fprintf(w, "success!")

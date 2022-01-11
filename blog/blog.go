@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
@@ -46,6 +47,7 @@ func startHttpServer(srv *http.Server) {
 	}
 
 	http.HandleFunc(sitePrefix+"/", frontpageHandler)
+	http.HandleFunc(sitePrefix+"/postlist", postlistHandler)
 	http.HandleFunc(sitePrefix+"/view/", makeHandler(viewHandler))
 	http.HandleFunc(sitePrefix+"/edit/", makeHandler(editHandler))
 	http.HandleFunc(sitePrefix+"/save/", makeHandler(saveHandler))

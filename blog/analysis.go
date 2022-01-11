@@ -57,10 +57,10 @@ func analyzeHandler(w http.ResponseWriter, r *http.Request) {
 	user, status := ValidateSession(w, r)
 	switch status {
 	case SessionUnauthorized:
-		printAlert(w, "please log in first", http.StatusUnauthorized)
+		http.Error(w, "please log in first", http.StatusUnauthorized)
 		return
 	case SessionInternalError:
-		printAlert(w, "internal error", http.StatusInternalServerError)
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
@@ -69,25 +69,29 @@ func analyzeHandler(w http.ResponseWriter, r *http.Request) {
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(a); err != nil {
 		fmt.Println(err)
-		printAlert(w, fmt.Sprintf("failed to decode request %v", err), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("failed to decode request %v", err), http.StatusBadRequest)
 		return
 	}
 
 	userinfo, err := getUserInfo(user)
 	switch {
 	case err == sql.ErrNoRows:
-		fmt.Printf("loadRank user %s: no such user\n", user)
+		http.Error(w, fmt.Sprintf("loadRank user %s: no such user\n", user), http.StatusBadRequest)
+		return
 	case err != nil:
-		fmt.Printf("failed to scan rows of loadRank %s: %v\n", user, err)
+		http.Error(w, fmt.Sprintf("failed to scan rows of loadRank %s: %v\n", user, err), http.StatusBadRequest)
+		return
 	default:
 	}
 
 	authorinfo, err := getUserInfo(a.Author)
 	switch {
 	case err == sql.ErrNoRows:
-		fmt.Printf("loadRank user %s: no such author\n", a.Author)
+		http.Error(w, fmt.Sprintf("loadRank user %s: no such author\n", a.Author), http.StatusBadRequest)
+		return
 	case err != nil:
-		fmt.Printf("failed to scan rows of loadRank %s: %v\n", a.Author, err)
+		http.Error(w, fmt.Sprintf("failed to scan rows of loadRank %s: %v\n", a.Author, err), http.StatusBadRequest)
+		return
 	default:
 	}
 

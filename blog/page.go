@@ -37,13 +37,22 @@ const (
 
 func frontpageHandler(w http.ResponseWriter, r *http.Request) {
 
-	data, err := getFrontpageData()
+	data := struct {
+		ViewCode bool
+	}{debugViewCode}
+
+	renderTemplate(w, "frontpage.html", data)
+}
+
+func postlistHandler(w http.ResponseWriter, r *http.Request) {
+
+	data, err := getPostsInfo()
 	if err != nil {
 		printAlert(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	renderTemplate(w, "frontpage.html", data)
+	renderTemplate(w, "postlist.html", data)
 }
 
 func viewHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
@@ -93,6 +102,7 @@ func saveHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 		return
 	}
 
+	// remaining: shall validate if title is "" or " " or others
 	title := r.FormValue("title")
 	if strings.EqualFold(title, "New") || strings.EqualFold(title, "frontpage") {
 		fmt.Fprintf(w, "Please give it a title name other than %v", title)

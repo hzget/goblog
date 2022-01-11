@@ -1,5 +1,9 @@
         function signin(){
             username = document.getElementById("usr").value
+            if (!validateUsername(username)) {
+                displayDialog("Alert", "please input a valid username", "w3-red")
+                return
+            }
             password = document.getElementById("pwd").value
             creds = '{ "username": "' + username + '", "password": "' + password +'" }'
             const xhttp = new XMLHttpRequest();
@@ -8,7 +12,7 @@
                 if (this.status == 200) {
                     location.href = "./"
                 } else {
-                    alert("failed to login")
+                    displayDialog("Alert", "failed to login", "w3-red")
                 }
             }
             xhttp.open("POST", "./signin");
@@ -23,14 +27,25 @@
                 if (this.status == 200) {
                     location.href = "./"
                 } else {
-                    alert("failed to logout")
+                    displayDialog("Alert", "failed to logout", "w3-red")
                 }
             }
             xhttp.open("POST", "./logout");
             xhttp.send();
         }
+
+        function validateUsername(user) {
+            let pattern = /^[0-9a-zA-Z]{3,10}$/g;
+            return pattern.test(user);
+
+        }
+
         function signup(){
             username = document.getElementById("usr").value
+            if (!validateUsername(username)) {
+                displayDialog("Alert", "please input a valid username", "w3-red")
+                return
+            }
             password = document.getElementById("pwd").value
             creds = '{ "username": "' + username + '", "password": "' + password +'" }'
             const xhttp = new XMLHttpRequest();
@@ -39,7 +54,7 @@
                 if (this.status == 200) {
                     location.href = "./"
                 } else {
-                    alert("fail to register:" + result)
+                    displayDialog("Alert", "fail to register:" + result, "w3-red")
                 }
             }
             xhttp.open("POST", "./signup");
@@ -65,7 +80,7 @@
         function checkCookie() {
           let token = getCookie("session_token");
           let user = getCookie("user");
-          if (token != "" && user != "") {
+          if (token != "" && user != "" && token != null && user != null) {
               document.getElementById("login").setAttribute("hidden", true)
               document.getElementById("logout").removeAttribute("hidden")
               document.getElementById("welcome").innerHTML = "Welcome " + user + " !"

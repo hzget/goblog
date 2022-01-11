@@ -3,6 +3,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="../templ/rs/css/w3.css">
     <link rel="stylesheet" href="../templ/rs/css/ratings.css">
+    <script src="../templ/rs/js/dialog.js"></script>
     <style>
         sub {
             vertical-align: sub;
@@ -25,7 +26,7 @@
                     location.href = "../view/{{.Id}}"
                 },
                 error: function(xhr,status,error){
-                    alert("error: response from server: " + error)
+                    displayDialog(error, xhr.responseText , "w3-red")
                 }
             })
           });
@@ -39,16 +40,6 @@
     </script>
     </head>
     <body>
-        <div class="w3-container w3-center w3-blue">
-        <h1>Go Blog</h1>
-        <p id="welcome">Welcome</p>
-        </div>
-        <div id="navbar" class="w3-bar w3-black">
-          <a href=".." class="w3-bar-item w3-button w3-mobile">Home</a>
-          <!--
-          <a href="../analysis" class="w3-bar-item w3-button w3-mobile">Data Analysis</a>
-          -->
-        </div>
         <div class="w3-container">
         <h3 id="title">
 {{if .Edit}}
@@ -87,15 +78,5 @@
         </form>
         {{end}}
         </div>
-        <!--
-        <iframe src="../templ/rs/html/footer.html" title="goblog footer" id="footer">
-        </iframe>
-        -->
-        <!--
-        <div class="w3-container w3-bottom w3-blue">
-          <h5>About</h5>
-          <p>A blog system implemented via golang</p>
-        </div>
-        -->
     </body>
 </html>

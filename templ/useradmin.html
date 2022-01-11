@@ -1,23 +1,8 @@
 <!DOCTYPE html>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="./templ/rs/css/w3.css">
+    <script src="./templ/rs/js/dialog.js"></script>
     <head>
-    <style>
-        table {
-          border-collapse: collapse;
-          border-spacing: 0;
-          border: 1px solid #ddd;
-        }
-
-        th, td {
-          text-align: left;
-          padding: 12px;
-        }
-
-        tr:nth-child(even) {
-          background-color: #f2f2f2;
-        }
-    </style>
     <script>
         function Update(user) {
             rank = document.querySelector('input[name="'+user+'"]:checked').value
@@ -42,10 +27,10 @@
             xhttp.onload = function() {
                 result = this.responseText
                 if (this.status == 200) {
-                    alert("update success")
+                    displayDialog("Info", "update success")
                     location.href="./superadmin"
                 } else {
-                    alert("failed to update: " + result)
+                    displayDialog("Alert", "failed to update: " + result, "w3-red")
                 }
             }
             xhttp.open("POST", "./saveranks");
@@ -55,23 +40,18 @@
     </script>
     </head>
     <body>
-        <div class="w3-container w3-center w3-blue">
-        <h1>Go Blog</h1>
-        <p id="welcome">Welcome</p>
-        </div>
-        <div id="navbar" class="w3-bar w3-black">
-          <a href="." class="w3-bar-item w3-button w3-mobile">Home</a>
-        </div>
         <div class="w3-container">
         <h3>Manage the ranks of users</h1>
         <form>
-        <div>
-        <table>
-          <tr>
+        <div class="w3-responsive">
+        <table class="w3-table-all w3-tiny">
+	  <thead>
+          <tr class="w3-light-gray">
             <th>User</th>
             <th>Rank</th>
             <th>Action</th>
           </tr>
+	  </thead>
         {{range $idx, $info := .}}
            {{$user := $info.Username}}{{ $rank := $info.Rank}}
             <tr>
@@ -87,7 +67,7 @@
                    value="gold" {{if eq $rank "gold" }}checked{{end}} >
             <label for='{{printf "%s_gold" $user}}'>gold</label>
             </td>
-            <td><input type="button" onclick='Update("{{$user}}")' value="Update"></td>
+            <td><input type="button" class="w3-button w3-gray" onclick='Update("{{$user}}")' value="Update"></td>
             <!--
             <td><input type="button" onclick="Delete({{$user}})" value="Delete"></td>
             -->
