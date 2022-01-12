@@ -15,20 +15,20 @@ package blog
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
-	"encoding/json"
-	"log"
 )
 
 type saveResp struct {
-	Success bool `json:"success"`
+	Success bool   `json:"success"`
 	Message string `json:"message"`
-	Id int64 `json:"id"`
+	Id      int64  `json:"id"`
 }
 
 type PageInfo struct {
@@ -136,7 +136,7 @@ func savejsHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(post); err != nil {
 		resp := encodeJsonSaveResp(false, fmt.Sprintf("failed to decode request %v", err), 0)
-		http.Error(w, resp , http.StatusBadRequest)
+		http.Error(w, resp, http.StatusBadRequest)
 		return
 	}
 
@@ -144,7 +144,7 @@ func savejsHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 	canEdit := info.getPermisson() == PermEdit
 	if !canEdit {
 		resp := encodeJsonSaveResp(false, "the user is not allowed to edit and save post", 0)
-		http.Error(w, resp , http.StatusBadRequest)
+		http.Error(w, resp, http.StatusBadRequest)
 		return
 	}
 
@@ -154,7 +154,7 @@ func savejsHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 		return
 	}
 
-        fmt.Fprintf(w, encodeJsonSaveResp(true, "save success", post.Id))
+	fmt.Fprintf(w, encodeJsonSaveResp(true, "save success", post.Id))
 }
 
 func encodeJsonSaveResp(success bool, msg string, id int64) string {
