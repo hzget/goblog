@@ -4,6 +4,7 @@
     <link rel="stylesheet" href="../templ/rs/css/w3.css">
     <script src="../templ/rs/js/jquery-3.6.0.min.js"></script>
     <script src="../templ/rs/js/dialog.js"></script>
+    <script src="../templ/rs/js/json.js"></script>
     <script>
         function checkTitle() {
             var title = document.getElementById("title").value
@@ -19,11 +20,41 @@
           this.style.height = "auto";
           this.style.height = (this.scrollHeight) + "px";
         });
+
+
+        function sendRequest() {
+
+            if (!checkTitle()) { return }
+
+            let id = {{.Id}}
+            let title = document.getElementById("title").value
+            let body = document.getElementById("content").value
+            jsdata = JSON.stringify({ "id": id, "title": title, "body": body})
+            validResp = ["success", "message", "id"]
+
+            const xhttp = new XMLHttpRequest();
+            xhttp.onload = function() {
+                obj = getJSObjFromJsonString(this.responseText, validResp)
+                if (obj === false) {
+                    displayDialog("Error", "failed to parse responseText:" + this.responseText, "w3-red")
+                    return
+                }
+
+                if (this.status == 200) {
+                    location.href="../view/" + obj.id
+                } else {
+                    displayDialog("Alert", "failed to update: " + obj.message, "w3-red")
+                }
+            }
+
+            xhttp.open("POST", "../savejs");
+            xhttp.send(jsdata)
+        }
+
     </script>
     </head>
     <body>
         <div class="w3-container">
-        <form id="formid" action="../save/{{.Id}}" method="POST" onsubmit="return checkTitle(event);">
             <h3><input type="text" placeholder="Enter the Title" value="{{printf "%s" .Title}}" id="title" name="title"/></h1>
             <div>
             <input type="button" class="w3-button w3-dark-grey" onclick='location.href="../view/{{.Id}}"' value="&curvearrowleft; Back to View">
@@ -31,8 +62,7 @@
             </div>
             <br>
             <div><textarea name="body" rows="10" cols="80" id="content">{{printf "%s" .Body}}</textarea></div>
-            <div><input type="submit" value="Save" class="w3-button w3-dark-grey"></div>
-        </form>
+            <div><input type="button" value="Save" class="w3-button w3-dark-grey" onclick="sendRequest()"></div>
         </div>
     </body>
 </html>

@@ -21,7 +21,15 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"encoding/json"
+	"log"
 )
+
+type saveResp struct {
+	Success bool `json:"success"`
+	Message string `json:"message"`
+	Id int64 `json:"id"`
+}
 
 type PageInfo struct {
 	Username string
@@ -119,6 +127,46 @@ func saveHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 	http.Redirect(w, r, fmt.Sprintf("../view/%d", p.Id), http.StatusSeeOther)
 }
 
+func savejsHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
+
+	var post = &Post{}
+
+	// remaining issue: how to handle missing field in json?
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(post); err != nil {
+		resp := encodeJsonSaveResp(false, fmt.Sprintf("failed to decode request %v", err), 0)
+		http.Error(w, resp , http.StatusBadRequest)
+		return
+	}
+
+	info.Id = post.Id
+	canEdit := info.getPermisson() == PermEdit
+	if !canEdit {
+		resp := encodeJsonSaveResp(false, "the user is not allowed to edit and save post", 0)
+		http.Error(w, resp , http.StatusBadRequest)
+		return
+	}
+
+	post.Author = info.Username
+	if err := post.save(); err != nil {
+		http.Error(w, encodeJsonSaveResp(false, err.Error(), 0), http.StatusInternalServerError)
+		return
+	}
+
+        fmt.Fprintf(w, encodeJsonSaveResp(true, "save success", post.Id))
+}
+
+func encodeJsonSaveResp(success bool, msg string, id int64) string {
+	data := &saveResp{success, msg, id}
+	b, err := json.MarshalIndent(data, "", "\t")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("encoded json is: %s\n", string(b))
+	return string(b)
+}
+
 func deleteHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 
 	canDel := info.getPermisson() == PermDelete
@@ -164,6 +212,25 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request, *PageInfo)) http.Ha
 		}
 
 		info := &PageInfo{username, int64(id)}
+
+		fn(w, r, info)
+	}
+}
+
+func makePageHandler(fn func(http.ResponseWriter, *http.Request, *PageInfo)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		username, status := ValidateSession(w, r)
+		switch status {
+		case SessionUnauthorized:
+			http.Error(w, encodeJsonSaveResp(false, "please log in first", 0), http.StatusUnauthorized)
+			return
+		case SessionInternalError:
+			http.Error(w, encodeJsonSaveResp(false, "internal error", 0), http.StatusInternalServerError)
+			return
+		}
+
+		info := &PageInfo{Username: username}
 
 		fn(w, r, info)
 	}

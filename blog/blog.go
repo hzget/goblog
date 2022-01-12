@@ -55,6 +55,9 @@ func startHttpServer(srv *http.Server) {
 	http.Handle(sitePrefix+"/templ/rs/", http.StripPrefix(
 		sitePrefix+"/templ/rs/", http.FileServer(http.Dir("./templ/resource/"))))
 
+//	http.HandleFunc(sitePrefix+"/viewjs", makePageHandler(viewjsHandler))
+	http.HandleFunc(sitePrefix+"/savejs", makePageHandler(savejsHandler))
+
 	http.HandleFunc(sitePrefix+"/signup", makeAuthHandler(signupHandler))
 	http.HandleFunc(sitePrefix+"/signin", makeAuthHandler(signinHandler))
 	http.HandleFunc(sitePrefix+"/logout", logoutHandler)

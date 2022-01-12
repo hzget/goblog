@@ -9,12 +9,12 @@ import (
 )
 
 type Post struct {
-	Id       int64
-	Title    string
-	Author   string
-	Date     time.Time
-	Modified time.Time
-	Body     string
+	Id       int64     `json:"id"`
+	Title    string    `json:"title"`
+	Author   string    `json:"author"`
+	Date     time.Time `json:"date"`
+	Modified time.Time `json:"modified"`
+	Body     string    `json:"body"`
 }
 
 type PostStatistics struct {
