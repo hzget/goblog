@@ -12,7 +12,7 @@
                 if (this.status == 200) {
                     location.href = "./"
                 } else {
-                    displayDialog("Alert", "failed to login", "w3-red")
+                    displayDialog("Alert", "failed to login:" + result, "w3-red")
                 }
             }
             xhttp.open("POST", "./signin");

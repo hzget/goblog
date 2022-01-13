@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
@@ -75,89 +76,89 @@ func getPassword(username string) (string, error) {
 	return password, err
 }
 
-func makeAuthHandler(fn func(http.ResponseWriter, *http.Request, *Credentials)) http.HandlerFunc {
+func makeAuthHandler(fn func(http.ResponseWriter, *http.Request, *Credentials) *appError) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		var e *appError
 		var creds = &Credentials{}
 
-		// decode json-format credentials from client
+		var isvalid = false
+		var err error
+
 		decoder := json.NewDecoder(r.Body)
 		decoder.DisallowUnknownFields()
-		if err := decoder.Decode(creds); err != nil {
-			http.Error(w, fmt.Sprintf("failed to decode request %v", err), http.StatusBadRequest)
-			return
+		if err = decoder.Decode(creds); err != nil {
+			e = &appError{err, http.StatusBadRequest}
+			goto Err
 		}
 
-		//fmt.Println("get creds:", creds)
-
 		// validate legal username
-		isvalid, err := creds.Validate()
-		if err != nil {
-			fmt.Printf("validate err:%v\n", err)
-			http.Error(w, "internal error happened when validate credentials",
-				http.StatusInternalServerError)
-			return
+		if isvalid, err = creds.Validate(); err != nil {
+			e = &appError{errors.New("internal error happened when validate credentials"),
+				http.StatusInternalServerError}
+			goto Err
 		}
 
 		if !isvalid {
-			http.Error(w, "invalid username", http.StatusBadRequest)
+			e = &appError{errors.New("invalid username"), http.StatusBadRequest}
+			goto Err
+		}
+
+		if e = fn(w, r, creds); e == nil {
 			return
 		}
 
-		fn(w, r, creds)
+	Err:
+		if e.Code == http.StatusInternalServerError {
+			fmt.Println(e.Error)
+		}
+		http.Error(w, encodeJsonResp(false, e.Error.Error(), -1), e.Code)
 	}
 }
 
-func signupHandler(w http.ResponseWriter, r *http.Request, creds *Credentials) {
+func signupHandler(w http.ResponseWriter, r *http.Request, creds *Credentials) *appError {
 
 	exist, err := checkUserExist(creds.Username)
 	if err != nil {
-		fmt.Printf("fail to check user existance in database:%v\n", err)
-		http.Error(w, "Internal Error", http.StatusInternalServerError)
-		return
+		return &appError{err, http.StatusInternalServerError}
 	}
 
 	if exist {
-		http.Error(w, "user already exists, please choose another name", http.StatusBadRequest)
-		return
+		return &appError{errors.New("user already exists, please choose another name"),
+			http.StatusBadRequest}
 	}
 
 	if err = creds.save(); err != nil {
-		fmt.Printf("fail to save creds %v, err info:%v\n", creds, err)
-		http.Error(w, "Internal Error", http.StatusInternalServerError)
-		return
+		return &appError{fmt.Errorf("fail to save creds %v, err info:%v\n", creds, err),
+			http.StatusInternalServerError}
 	}
 
-	fmt.Fprintf(w, "success!")
+	fmt.Fprintf(w, encodeJsonResp(true, "signup success", -1))
+
+	return nil
 }
 
-func signinHandler(w http.ResponseWriter, r *http.Request, creds *Credentials) {
+func signinHandler(w http.ResponseWriter, r *http.Request, creds *Credentials) *appError {
 
 	hash, err := getPassword(creds.Username)
 	switch {
 	case err == sql.ErrNoRows:
-		http.Error(w, fmt.Sprintf("no such user %v", creds.Username), http.StatusUnauthorized)
-		return
+		return &appError{fmt.Errorf("no such user %v, %v", creds.Username, err), http.StatusUnauthorized}
 	case err != nil:
-		fmt.Printf("fail to get password for user %v\n", creds.Username)
-		http.Error(w, "Internal Error", http.StatusInternalServerError)
-		return
+		return &appError{fmt.Errorf("fail to get password for user %v, %v", creds.Username, err),
+			http.StatusInternalServerError}
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(hash), []byte(creds.Password))
 	if err != nil {
-		http.Error(w, "failed to validate password", http.StatusUnauthorized)
-		return
+		return &appError{fmt.Errorf("failed to validate password"), http.StatusUnauthorized}
 	}
 
-	// create session token
 	token := uuid.NewString()
-	// fmt.Println(token, creds.Username, sessionTimeout)
 	err = rdb.Set(context.Background(), token, creds.Username, sessionTimeout).Err()
 	if err != nil {
-		fmt.Printf("fail to set token for user %v\n", creds.Username)
-		http.Error(w, "Internal Error", http.StatusInternalServerError)
-		return
+		return &appError{fmt.Errorf("fail to set token for user %v", creds.Username),
+			http.StatusInternalServerError}
 	}
 
 	http.SetCookie(w, &http.Cookie{
@@ -172,6 +173,9 @@ func signinHandler(w http.ResponseWriter, r *http.Request, creds *Credentials) {
 		Path:    "/",
 		Expires: time.Now().Add(sessionTimeout),
 	})
+
+	fmt.Fprintf(w, encodeJsonResp(true, "signin success", -1))
+	return nil
 }
 
 func ValidateSession(w http.ResponseWriter, r *http.Request) (string, SessionStatus) {

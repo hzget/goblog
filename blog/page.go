@@ -25,11 +25,16 @@ import (
 	"strings"
 )
 
+type appError struct {
+	Error error
+	Code  int
+}
+
 type viewResp struct {
 	PostInfo
 }
 
-type resp struct {
+type jsonResp struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 	Id      int64  `json:"id"`
@@ -135,7 +140,7 @@ func saveHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 	http.Redirect(w, r, fmt.Sprintf("../view/%d", p.Id), http.StatusSeeOther)
 }
 
-func viewjsHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
+func viewjsHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) *appError {
 
 	var post = &PageInfo{}
 
@@ -143,34 +148,30 @@ func viewjsHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(post); err != nil {
-		resp := encodeJsonResp(false, fmt.Sprintf("failed to decode request %v", err), 0)
-		http.Error(w, resp, http.StatusBadRequest)
-		return
+		return &appError{err, http.StatusBadRequest}
 	}
 
 	info.Id = post.Id
 	canView := info.getPermisson() >= PermView
 	if !canView {
-		resp := encodeJsonResp(false, "the user is not allowed to view post", post.Id)
-		http.Error(w, resp, http.StatusBadRequest)
-		return
+		return &appError{errors.New("the user is not allowed to view post"),
+			http.StatusBadRequest}
 	}
 
 	data, err := getPostInfo(post.Id)
 	switch {
 	case err == sql.ErrNoRows:
-		http.Error(w, encodeJsonResp(false, err.Error(), post.Id), http.StatusBadRequest)
-		return
+		return &appError{err, http.StatusBadRequest}
 	case err != nil:
-		fmt.Println(err)
-		http.Error(w, encodeJsonResp(false, err.Error(), post.Id), http.StatusInternalServerError)
-		return
+		return &appError{err, http.StatusInternalServerError}
 	}
 
 	fmt.Fprintf(w, encodeJsonViewResp(data))
+
+	return nil
 }
 
-func savejsHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
+func savejsHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) *appError {
 
 	var post = &Post{}
 
@@ -178,31 +179,29 @@ func savejsHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(post); err != nil {
-		resp := encodeJsonResp(false, fmt.Sprintf("failed to decode request %v", err), 0)
-		http.Error(w, resp, http.StatusBadRequest)
-		return
+		return &appError{err, http.StatusBadRequest}
 	}
 
 	info.Id = post.Id
 	canEdit := info.getPermisson() == PermEdit
 	if !canEdit {
-		resp := encodeJsonResp(false, "the user is not allowed to edit and save post", 0)
-		http.Error(w, resp, http.StatusBadRequest)
-		return
+		return &appError{errors.New("the user is not allowed to edit and save post"),
+			http.StatusBadRequest}
 	}
 
 	post.Author = info.Username
 	if err := post.save(); err != nil {
-		http.Error(w, encodeJsonResp(false, err.Error(), 0), http.StatusInternalServerError)
-		return
+		return &appError{err, http.StatusInternalServerError}
 	}
 
 	fmt.Fprintf(w, encodeJsonResp(true, "save success", post.Id))
+
+	return nil
 }
 
 func encodeJsonResp(success bool, msg string, id int64) string {
 
-	data := &resp{success, msg, id}
+	data := &jsonResp{success, msg, id}
 	b, err := json.MarshalIndent(data, "", "\t")
 	if err != nil {
 		log.Fatal(err)
@@ -270,22 +269,33 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request, *PageInfo)) http.Ha
 	}
 }
 
-func makePageHandler(fn func(http.ResponseWriter, *http.Request, *PageInfo)) http.HandlerFunc {
+func makePageHandler(fn func(http.ResponseWriter, *http.Request, *PageInfo) *appError) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		var e *appError
+		var info *PageInfo
 
 		username, status := ValidateSession(w, r)
 		switch status {
 		case SessionUnauthorized:
-			http.Error(w, encodeJsonResp(false, "please log in first", 0), http.StatusUnauthorized)
-			return
+			e = &appError{errors.New("please log in first"), http.StatusUnauthorized}
+			goto Err
 		case SessionInternalError:
-			http.Error(w, encodeJsonResp(false, "internal error", 0), http.StatusInternalServerError)
+			e = &appError{errors.New("internal error"), http.StatusInternalServerError}
+			goto Err
+		}
+
+		info = &PageInfo{Username: username}
+
+		if e = fn(w, r, info); e == nil {
 			return
 		}
 
-		info := &PageInfo{Username: username}
-
-		fn(w, r, info)
+	Err:
+		if e.Code == http.StatusInternalServerError {
+			fmt.Println(e.Error)
+		}
+		http.Error(w, encodeJsonResp(false, e.Error.Error(), -1), e.Code)
 	}
 }
 
