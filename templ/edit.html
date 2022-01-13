@@ -57,12 +57,14 @@
         <div class="w3-container">
             <h3><input type="text" placeholder="Enter the Title" value="{{printf "%s" .Title}}" id="title" name="title"/></h1>
             <div>
+            <form>
             <input type="button" class="w3-button w3-dark-grey" onclick='location.href="../view/{{.Id}}"' value="&curvearrowleft; Back to View">
             <input type="reset" class="w3-button w3-dark-grey" value="&curvearrowleft; Reset">
             </div>
             <br>
             <div><textarea name="body" rows="10" cols="80" id="content">{{printf "%s" .Body}}</textarea></div>
             <div><input type="button" value="Save" class="w3-button w3-dark-grey" onclick="sendRequest()"></div>
+            </form>
         </div>
     </body>
 </html>
