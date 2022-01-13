@@ -50,12 +50,12 @@ func startHttpServer(srv *http.Server) {
 	http.HandleFunc(sitePrefix+"/postlist", postlistHandler)
 	http.HandleFunc(sitePrefix+"/view/", makeHandler(viewHandler))
 	http.HandleFunc(sitePrefix+"/edit/", makeHandler(editHandler))
-	http.HandleFunc(sitePrefix+"/save/", makeHandler(saveHandler))
+	//http.HandleFunc(sitePrefix+"/save/", makeHandler(saveHandler))
 	http.HandleFunc(sitePrefix+"/delete/", makeHandler(deleteHandler))
 	http.Handle(sitePrefix+"/templ/rs/", http.StripPrefix(
 		sitePrefix+"/templ/rs/", http.FileServer(http.Dir("./templ/resource/"))))
 
-	//	http.HandleFunc(sitePrefix+"/viewjs", makePageHandler(viewjsHandler))
+	http.HandleFunc(sitePrefix+"/viewjs", makePageHandler(viewjsHandler))
 	http.HandleFunc(sitePrefix+"/savejs", makePageHandler(savejsHandler))
 
 	http.HandleFunc(sitePrefix+"/signup", makeAuthHandler(signupHandler))

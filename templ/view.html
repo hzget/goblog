@@ -12,6 +12,39 @@
     </style>
     <script src="../templ/rs/js/jquery-3.6.0.min.js"></script>
     <script>
+        function updateRating() {
+            s = [{{.Star1}}, {{.Star2}}, {{.Star3}}, {{.Star4}}, {{.Star5}}];
+            sum = 0;
+            count = 0;
+
+            for (i=0; i<s.length; ++i) {
+                sum += (i+1)*s[i]
+                count += s[i]
+            }
+
+            vote = count > 0 ? Math.floor(sum/count) : 0;
+
+            ratio = [0,0,0,0,0]
+            if (count>0) {
+                for (i=0;i<s.length;i++) {
+                    ratio[i] = s[i]/count;
+                }
+            }
+
+            if (vote > 0) {
+                $('.selected').each(function(){
+                    $(this).removeClass('selected');
+                });
+                $('#star' + vote).addClass('selected')
+            }
+
+            var meter = document.getElementsByTagName("meter");
+            for (i=0; i < meter.length; i++) {
+                meter[i].setAttribute("value", ratio[i]);
+            }
+
+        }
+
         $(function (){
           var star = '.star', selected = '.selected';
 
@@ -30,30 +63,24 @@
                 }
             })
           });
-{{if gt .Vote 0}}
-          $(selected).each(function(){
-              $(this).removeClass('selected');
-          });
-       $('#star{{.Vote}}').addClass('selected')
-{{end}}
+
+          updateRating()
         });
     </script>
     </head>
     <body>
         <div class="w3-container">
         <h3 id="title">
-{{if .Edit}}
+{{if .CanEdit}}
         <a href="../edit/{{.Id}}">{{printf "%s" .Title}}</a>
 {{else}}
         {{printf "%s" .Title}}
 {{end}}
         <sub>by {{.Author}}</sub>
-        </h1>
-        <p id="body">
-        {{range $index, $p := .Body}}
-        {{$p}} <br>
-        {{end}}
-        </p>
+        </h3>
+        <pre>
+        {{.Body}}
+        </pre>
         <br><br>
         Ratings:
         <ol class="ratings">
@@ -64,15 +91,29 @@
           <li class="star" id="star1"></li>
         </ol>
         <table>
-        {{range $index, $p := .Percent}}
-        <tr>
-        <td>{{add $index 1}} star</td>
-        <td><meter value={{printf "%.2f" $p}} min="0" max="1"></meter></td>
-        {{$p100 := multiple $p 100}}<td>{{printf "%.f" $p100}}%</td>
-        </tr>
-        {{end}}
+
+        <tr> <td>1 star</td>
+        <td><meter value="0" min="0" max="1" class="ratio"></meter></td>
+        <td>{{.Star1}}</td> </tr>
+
+        <tr> <td>2 star</td>
+        <td><meter value="0" min="0" max="1" class="ratio"></meter></td>
+        <td>{{.Star2}}</td> </tr>
+
+        <tr> <td>3 star</td>
+        <td><meter value="0" min="0" max="1" class="ratio"></meter></td>
+        <td>{{.Star3}}</td> </tr>
+
+        <tr> <td>4 star</td>
+        <td><meter value="0" min="0" max="1" class="ratio"></meter></td>
+        <td>{{.Star4}}</td> </tr>
+
+        <tr> <td>5 star</td>
+        <td><meter value="0" min="0" max="1" class="ratio"></meter></td>
+        <td>{{.Star5}}</td> </tr>
+
         </table>
-        {{if .Del}}
+        {{if .CanDelete}}
         <form id="formid" action="../delete/{{.Id}}" method="POST" onsubmit="return confirm('want to delete?');">
             <div><input type="submit" value="[x]Delete"></div>
         </form>

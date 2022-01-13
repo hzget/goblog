@@ -43,3 +43,7 @@ func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
 		printAlert(w, err.Error(), http.StatusInternalServerError)
 	}
 }
+
+func getHTMLEscapeString(src string) string {
+	return template.HTMLEscapeString(src)
+}

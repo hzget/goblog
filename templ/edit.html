@@ -8,7 +8,7 @@
     <script>
         function checkTitle() {
             var title = document.getElementById("title").value
-            if (title == "" || title.match(/^New$/ig) != null) {
+            if (title == "") {
                 displayDialog("Alert", "please input a valid title", "w3-red")
                 return false
             }

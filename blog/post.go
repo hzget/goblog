@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"math"
+	"regexp"
+	"strconv"
 	"time"
 )
 
@@ -17,13 +19,24 @@ type Post struct {
 	Body     string    `json:"body"`
 }
 
+const (
+	regexId        = `^[0-9]+$`
+	regexTitle_Neg = `^[ ]*$`
+	regexUsername  = `^[0-9a-zA-Z]{3,10}$`
+)
+
 type PostStatistics struct {
-	PostId int64
-	Star1  int64
-	Star2  int64
-	Star3  int64
-	Star4  int64
-	Star5  int64
+	PostId int64 `json:"postid"`
+	Star1  int64 `json:"star1"`
+	Star2  int64 `json:"star2"`
+	Star3  int64 `json:"star3"`
+	Star4  int64 `json:"star4"`
+	Star5  int64 `json:"star5"`
+}
+
+type PostInfo struct {
+	Post
+	PostStatistics
 }
 
 func loadPost(id int64) (*Post, error) {
@@ -81,6 +94,38 @@ func (s *PostStatistics) getVote() (int, []float64) {
 	return vote, percent
 }
 
+func (p *Post) Validate() error {
+
+	fail := func(what string, err error) error {
+		return fmt.Errorf("fail to validate %s, %v", what, err)
+	}
+
+	if p == nil {
+		return fail("reciever Post is nil", nil)
+	}
+
+	var match bool
+	var err error
+
+	id := strconv.FormatInt(p.Id, 10)
+	match, err = regexp.MatchString(regexId, id)
+	if !match || err != nil {
+		return fail("Post.Id:"+id, err)
+	}
+
+	match, err = regexp.MatchString(regexTitle_Neg, p.Title)
+	if match || err != nil {
+		return fail("Post.Title:"+p.Title, err)
+	}
+
+	match, err = regexp.MatchString(regexUsername, p.Author)
+	if !match || err != nil {
+		return fail("Post.Author:"+p.Author, err)
+	}
+
+	return nil
+}
+
 // shall check if user exists in the db. otherwise, there maybe issues
 // for example, the login user is removed from db, but login session
 // is valid in redis, then the user sends a "create page" command,
@@ -89,6 +134,10 @@ func (p *Post) save() error {
 
 	fail := func(err error) error {
 		return fmt.Errorf("save page failed: %v", err)
+	}
+
+	if err := p.Validate(); err != nil {
+		return fail(err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), shortDuration)
@@ -127,13 +176,47 @@ func DeletePost(id int64) error {
 	return err
 }
 
-func getPostsInfo() ([]Post, error) {
+func getPostInfo(id int64) (PostInfo, error) {
+
+	var p PostInfo
+	ctx, cancel := context.WithTimeout(context.Background(), shortDuration)
+	defer cancel()
+
+	q := `SELECT post.*, ` +
+		`IFNULL(poststatistics.postid,0), ` +
+		`IFNULL(poststatistics.star1,0), ` +
+		`IFNULL(poststatistics.star2,0), ` +
+		`IFNULL(poststatistics.star3,0), ` +
+		`IFNULL(poststatistics.star4,0), ` +
+		`IFNULL(poststatistics.star5,0)  ` +
+		`FROM post ` +
+		`LEFT JOIN poststatistics ` +
+		`ON post.id = poststatistics.postid ` +
+		`WHERE post.id = ?`
+
+	row := db.QueryRowContext(ctx, q, id)
+	err := row.Scan(&p.Id, &p.Title, &p.Author, &p.Date, &p.Modified, &p.Body,
+		&p.PostId, &p.Star1, &p.Star2, &p.Star3, &p.Star4, &p.Star5)
+
+	return p, err
+}
+
+func getPostsInfo() ([]PostInfo, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), shortDuration)
 	defer cancel()
 
-	var ps []Post
-	q := `select id, title, author, ctime, mtime from post`
+	var ps []PostInfo
+	q := `SELECT post.*, ` +
+		`IFNULL(poststatistics.postid,0), ` +
+		`IFNULL(poststatistics.star1,0), ` +
+		`IFNULL(poststatistics.star2,0), ` +
+		`IFNULL(poststatistics.star3,0), ` +
+		`IFNULL(poststatistics.star4,0), ` +
+		`IFNULL(poststatistics.star5,0)  ` +
+		`FROM post ` +
+		`LEFT JOIN poststatistics ` +
+		`ON post.id = poststatistics.postid`
 
 	rows, err := db.QueryContext(ctx, q)
 
@@ -144,8 +227,9 @@ func getPostsInfo() ([]Post, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var p Post
-		if err := rows.Scan(&p.Id, &p.Title, &p.Author, &p.Date, &p.Modified); err != nil {
+		var p PostInfo
+		if err := rows.Scan(&p.Id, &p.Title, &p.Author, &p.Date, &p.Modified, &p.Body,
+			&p.PostId, &p.Star1, &p.Star2, &p.Star3, &p.Star4, &p.Star5); err != nil {
 			return nil, err
 		}
 

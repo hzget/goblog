@@ -25,7 +25,11 @@ import (
 	"strings"
 )
 
-type saveResp struct {
+type viewResp struct {
+	PostInfo
+}
+
+type resp struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 	Id      int64  `json:"id"`
@@ -33,7 +37,7 @@ type saveResp struct {
 
 type PageInfo struct {
 	Username string
-	Id       int64
+	Id       int64 `json:"id"`
 }
 
 const (
@@ -58,6 +62,10 @@ func postlistHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		printAlert(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	for i := 0; i < len(data); i++ {
+		data[i].Body = getHTMLEscapeString(data[i].Body)
 	}
 
 	renderTemplate(w, "postlist.html", data)
@@ -127,6 +135,41 @@ func saveHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 	http.Redirect(w, r, fmt.Sprintf("../view/%d", p.Id), http.StatusSeeOther)
 }
 
+func viewjsHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
+
+	var post = &PageInfo{}
+
+	// remaining issue: how to handle missing field in json?
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(post); err != nil {
+		resp := encodeJsonResp(false, fmt.Sprintf("failed to decode request %v", err), 0)
+		http.Error(w, resp, http.StatusBadRequest)
+		return
+	}
+
+	info.Id = post.Id
+	canView := info.getPermisson() >= PermView
+	if !canView {
+		resp := encodeJsonResp(false, "the user is not allowed to view post", post.Id)
+		http.Error(w, resp, http.StatusBadRequest)
+		return
+	}
+
+	data, err := getPostInfo(post.Id)
+	switch {
+	case err == sql.ErrNoRows:
+		http.Error(w, encodeJsonResp(false, err.Error(), post.Id), http.StatusBadRequest)
+		return
+	case err != nil:
+		fmt.Println(err)
+		http.Error(w, encodeJsonResp(false, err.Error(), post.Id), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintf(w, encodeJsonViewResp(data))
+}
+
 func savejsHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 
 	var post = &Post{}
@@ -135,7 +178,7 @@ func savejsHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(post); err != nil {
-		resp := encodeJsonSaveResp(false, fmt.Sprintf("failed to decode request %v", err), 0)
+		resp := encodeJsonResp(false, fmt.Sprintf("failed to decode request %v", err), 0)
 		http.Error(w, resp, http.StatusBadRequest)
 		return
 	}
@@ -143,27 +186,37 @@ func savejsHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 	info.Id = post.Id
 	canEdit := info.getPermisson() == PermEdit
 	if !canEdit {
-		resp := encodeJsonSaveResp(false, "the user is not allowed to edit and save post", 0)
+		resp := encodeJsonResp(false, "the user is not allowed to edit and save post", 0)
 		http.Error(w, resp, http.StatusBadRequest)
 		return
 	}
 
 	post.Author = info.Username
 	if err := post.save(); err != nil {
-		http.Error(w, encodeJsonSaveResp(false, err.Error(), 0), http.StatusInternalServerError)
+		http.Error(w, encodeJsonResp(false, err.Error(), 0), http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Fprintf(w, encodeJsonSaveResp(true, "save success", post.Id))
+	fmt.Fprintf(w, encodeJsonResp(true, "save success", post.Id))
 }
 
-func encodeJsonSaveResp(success bool, msg string, id int64) string {
-	data := &saveResp{success, msg, id}
+func encodeJsonResp(success bool, msg string, id int64) string {
+
+	data := &resp{success, msg, id}
 	b, err := json.MarshalIndent(data, "", "\t")
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("encoded json is: %s\n", string(b))
+	return string(b)
+}
+
+func encodeJsonViewResp(p PostInfo) string {
+
+	data := &viewResp{p}
+	b, err := json.MarshalIndent(data, "", "\t")
+	if err != nil {
+		log.Fatal(err)
+	}
 	return string(b)
 }
 
@@ -223,10 +276,10 @@ func makePageHandler(fn func(http.ResponseWriter, *http.Request, *PageInfo)) htt
 		username, status := ValidateSession(w, r)
 		switch status {
 		case SessionUnauthorized:
-			http.Error(w, encodeJsonSaveResp(false, "please log in first", 0), http.StatusUnauthorized)
+			http.Error(w, encodeJsonResp(false, "please log in first", 0), http.StatusUnauthorized)
 			return
 		case SessionInternalError:
-			http.Error(w, encodeJsonSaveResp(false, "internal error", 0), http.StatusInternalServerError)
+			http.Error(w, encodeJsonResp(false, "internal error", 0), http.StatusInternalServerError)
 			return
 		}
 
@@ -258,47 +311,22 @@ func (info *PageInfo) getPermisson() int {
 	return PermView
 }
 
-func getFrontpageData() (interface{}, error) {
-	info, err := getPostsInfo()
-	if err != nil {
-		return nil, err
-	}
-
-	data := struct {
-		ViewCode bool
-		Posts    []Post
-	}{debugViewCode, info}
-
-	return data, nil
-}
-
 func getViewData(info *PageInfo) (interface{}, error) {
 
-	p, err := loadPost(info.Id)
+	pi, err := getPostInfo(info.Id)
 	if err != nil {
 		return nil, err
 	}
 
-	s, err := loadPostStatistics(p.Id)
-	vote := 0
-	percent := []float64{0, 0, 0, 0, 0}
-	if err == nil {
-		vote, percent = s.getVote()
-	}
+	perm := info.getPermisson()
 
-	canEdit := info.getPermisson() == PermEdit
-	canDel := info.getPermisson() == PermDelete
-	body := strings.Split(string(p.Body), "\n")
+	pi.Body = getHTMLEscapeString(pi.Body)
+
 	data := struct {
-		Id      int64
-		Title   string
-		Body    []string
-		Author  string
-		Edit    bool
-		Del     bool
-		Vote    int
-		Percent []float64
-	}{p.Id, p.Title, body, p.Author, canEdit, canDel, vote, percent}
+		PostInfo
+		CanEdit   bool
+		CanDelete bool
+	}{pi, perm == PermEdit, perm == PermDelete}
 
 	return data, nil
 }
