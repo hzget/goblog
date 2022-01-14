@@ -13,7 +13,11 @@
     <script src="../templ/rs/js/jquery-3.6.0.min.js"></script>
     <script>
         function updateRating() {
-            s = [{{.Star1}}, {{.Star2}}, {{.Star3}}, {{.Star4}}, {{.Star5}}];
+            s = []
+{{range $i, $v := .Star}}
+            s.push({{$v}})
+{{end}}
+      //      s = {{.Star}};
             sum = 0;
             count = 0;
 
@@ -89,27 +93,12 @@
           <li class="star" id="star1"></li>
         </ol>
         <table>
-
-        <tr> <td>1 star</td>
+{{range $i, $v := .Star}}
+{{$index := add $i 1}}
+        <tr> <td>{{$index}} star</td>
         <td><meter value="0" min="0" max="1" class="ratio"></meter></td>
-        <td>{{.Star1}}</td> </tr>
-
-        <tr> <td>2 star</td>
-        <td><meter value="0" min="0" max="1" class="ratio"></meter></td>
-        <td>{{.Star2}}</td> </tr>
-
-        <tr> <td>3 star</td>
-        <td><meter value="0" min="0" max="1" class="ratio"></meter></td>
-        <td>{{.Star3}}</td> </tr>
-
-        <tr> <td>4 star</td>
-        <td><meter value="0" min="0" max="1" class="ratio"></meter></td>
-        <td>{{.Star4}}</td> </tr>
-
-        <tr> <td>5 star</td>
-        <td><meter value="0" min="0" max="1" class="ratio"></meter></td>
-        <td>{{.Star5}}</td> </tr>
-
+        <td>{{$v}}</td> </tr>
+{{end}}
         </table>
         {{if .CanDelete}}
         <form id="formid" action="../delete/{{.Id}}" method="POST" onsubmit="return confirm('want to delete?');">

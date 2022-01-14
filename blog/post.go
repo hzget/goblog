@@ -2,9 +2,7 @@ package blog
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
-	"math"
 	"regexp"
 	"strconv"
 	"time"
@@ -26,17 +24,13 @@ const (
 )
 
 type PostStatistics struct {
-	PostId int64 `json:"postid"`
-	Star1  int64 `json:"star1"`
-	Star2  int64 `json:"star2"`
-	Star3  int64 `json:"star3"`
-	Star4  int64 `json:"star4"`
-	Star5  int64 `json:"star5"`
+	PostId int64    `json:"postid"`
+	Star   [5]int64 `json:"star"`
 }
 
 type PostInfo struct {
 	Post
-	PostStatistics
+	Star [5]int64 `json:"star"`
 }
 
 func loadPost(id int64) (*Post, error) {
@@ -50,48 +44,6 @@ func loadPost(id int64) (*Post, error) {
 	err := row.Scan(&p.Id, &p.Title, &p.Author, &p.Date, &p.Modified, &p.Body)
 
 	return &p, err
-}
-
-func loadPostStatistics(id int64) (*PostStatistics, error) {
-
-	var s PostStatistics
-	ctx, cancel := context.WithTimeout(context.Background(), shortDuration)
-	defer cancel()
-
-	q := `select * from poststatistics where postid = ?`
-	row := db.QueryRowContext(ctx, q, id)
-	err := row.Scan(&s.PostId, &s.Star1, &s.Star2, &s.Star3, &s.Star4, &s.Star5)
-
-	switch {
-	case err == sql.ErrNoRows:
-		return nil, fmt.Errorf("loadPostStatistics id %d: no such id", id)
-	case err != nil:
-		return nil, fmt.Errorf("failed to scan rows of loadPost %d: %v", id, err)
-	default:
-		return &s, nil
-	}
-}
-
-func (s *PostStatistics) getVote() (int, []float64) {
-
-	percent := []float64{0, 0, 0, 0, 0}
-
-	count := s.Star1 + s.Star2 + s.Star3 + s.Star4 + s.Star5
-	sum := s.Star1 + 2*s.Star2 + 3*s.Star3 + 4*s.Star4 + 5*s.Star5
-	if count == 0 {
-		return 0, percent
-	}
-
-	v := float64(sum) / float64(count)
-	vote := int(math.Round(v))
-
-	percent[0] = float64(s.Star1) / float64(count)
-	percent[1] = float64(s.Star2) / float64(count)
-	percent[2] = float64(s.Star3) / float64(count)
-	percent[3] = float64(s.Star4) / float64(count)
-	percent[4] = float64(s.Star5) / float64(count)
-
-	return vote, percent
 }
 
 func (p *Post) Validate() error {
@@ -183,7 +135,6 @@ func getPostInfo(id int64) (PostInfo, error) {
 	defer cancel()
 
 	q := `SELECT post.*, ` +
-		`IFNULL(poststatistics.postid,0), ` +
 		`IFNULL(poststatistics.star1,0), ` +
 		`IFNULL(poststatistics.star2,0), ` +
 		`IFNULL(poststatistics.star3,0), ` +
@@ -196,7 +147,7 @@ func getPostInfo(id int64) (PostInfo, error) {
 
 	row := db.QueryRowContext(ctx, q, id)
 	err := row.Scan(&p.Id, &p.Title, &p.Author, &p.Date, &p.Modified, &p.Body,
-		&p.PostId, &p.Star1, &p.Star2, &p.Star3, &p.Star4, &p.Star5)
+		&p.Star[0], &p.Star[1], &p.Star[2], &p.Star[3], &p.Star[4])
 
 	return p, err
 }
@@ -208,7 +159,6 @@ func getPostsInfo() ([]PostInfo, error) {
 
 	var ps []PostInfo
 	q := `SELECT post.*, ` +
-		`IFNULL(poststatistics.postid,0), ` +
 		`IFNULL(poststatistics.star1,0), ` +
 		`IFNULL(poststatistics.star2,0), ` +
 		`IFNULL(poststatistics.star3,0), ` +
@@ -229,7 +179,7 @@ func getPostsInfo() ([]PostInfo, error) {
 	for rows.Next() {
 		var p PostInfo
 		if err := rows.Scan(&p.Id, &p.Title, &p.Author, &p.Date, &p.Modified, &p.Body,
-			&p.PostId, &p.Star1, &p.Star2, &p.Star3, &p.Star4, &p.Star5); err != nil {
+			&p.Star[0], &p.Star[1], &p.Star[2], &p.Star[3], &p.Star[4]); err != nil {
 			return nil, err
 		}
 
