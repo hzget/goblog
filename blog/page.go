@@ -31,13 +31,18 @@ type appError struct {
 }
 
 type viewResp struct {
+	jsonResp
 	PostInfo
+}
+
+type saveResp struct {
+	jsonResp
+	Id int64 `json:"id"`
 }
 
 type jsonResp struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
-	Id      int64  `json:"id"`
 }
 
 type PageInfo struct {
@@ -194,14 +199,12 @@ func savejsHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) *appE
 		return &appError{err, http.StatusInternalServerError}
 	}
 
-	fmt.Fprintf(w, encodeJsonResp(true, "save success", post.Id))
+	fmt.Fprintf(w, encodeJsonSaveResp(true, "save success", post.Id))
 
 	return nil
 }
 
-func encodeJsonResp(success bool, msg string, id int64) string {
-
-	data := &jsonResp{success, msg, id}
+func encodeJson(data interface{}) string {
 	b, err := json.MarshalIndent(data, "", "\t")
 	if err != nil {
 		log.Fatal(err)
@@ -209,14 +212,16 @@ func encodeJsonResp(success bool, msg string, id int64) string {
 	return string(b)
 }
 
-func encodeJsonViewResp(p PostInfo) string {
+func encodeJsonResp(success bool, msg string) string {
+	return encodeJson(&jsonResp{success, msg})
+}
 
-	data := &viewResp{p}
-	b, err := json.MarshalIndent(data, "", "\t")
-	if err != nil {
-		log.Fatal(err)
-	}
-	return string(b)
+func encodeJsonSaveResp(success bool, msg string, id int64) string {
+	return encodeJson(&saveResp{jsonResp{success, msg}, id})
+}
+
+func encodeJsonViewResp(p PostInfo) string {
+	return encodeJson(&viewResp{jsonResp{true, ""}, p})
 }
 
 func deleteHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
@@ -295,7 +300,7 @@ func makePageHandler(fn func(http.ResponseWriter, *http.Request, *PageInfo) *app
 		if e.Code == http.StatusInternalServerError {
 			fmt.Println(e.Error)
 		}
-		http.Error(w, encodeJsonResp(false, e.Error.Error(), -1), e.Code)
+		http.Error(w, encodeJsonResp(false, e.Error.Error()), e.Code)
 	}
 }
 

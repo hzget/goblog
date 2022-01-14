@@ -21,6 +21,33 @@
           this.style.height = (this.scrollHeight) + "px";
         });
 
+        function onSaveResponse(status, responseText){
+            validSuccessResp = ["success", "message", "id"]
+            validFailResp = ["success", "message"]
+            validResp = status == 200 ? validSuccessResp:validFailResp
+
+            obj = getJSObjFromJsonString(responseText, validResp)
+            if (obj === false) {
+                let header = "Error", info = "", color="w3-red";
+                if (status == 200) {
+                    header = "Alert"
+                    info = "Save success, but failed to parse responseText:" + responseText
+                    color = "w3-yellow"
+                } else {
+                    info = "failed to parse responseText:" + responseText
+                }
+
+                displayDialog(header, info, color)
+                return
+            }
+
+            if (status == 200) {
+                location.href="../view/" + obj.id
+            } else {
+                displayDialog("Alert", "failed to update: " + obj.message, "w3-red")
+            }
+        }
+
 
         function sendRequest() {
 
@@ -30,23 +57,11 @@
             let title = document.getElementById("title").value
             let body = document.getElementById("content").value
             jsdata = JSON.stringify({ "id": id, "title": title, "body": body})
-            validResp = ["success", "message", "id"]
 
             const xhttp = new XMLHttpRequest();
-            xhttp.onload = function() {
-                obj = getJSObjFromJsonString(this.responseText, validResp)
-                if (obj === false) {
-                    displayDialog("Error", "failed to parse responseText:" + this.responseText, "w3-red")
-                    return
-                }
-
-                if (this.status == 200) {
-                    location.href="../view/" + obj.id
-                } else {
-                    displayDialog("Alert", "failed to update: " + obj.message, "w3-red")
-                }
+            xhttp.onload = function () {
+                onSaveResponse(this.status, this.responseText)
             }
-
             xhttp.open("POST", "../savejs");
             xhttp.send(jsdata)
         }

@@ -112,7 +112,7 @@ func makeAuthHandler(fn func(http.ResponseWriter, *http.Request, *Credentials) *
 		if e.Code == http.StatusInternalServerError {
 			fmt.Println(e.Error)
 		}
-		http.Error(w, encodeJsonResp(false, e.Error.Error(), -1), e.Code)
+		http.Error(w, encodeJsonResp(false, e.Error.Error()), e.Code)
 	}
 }
 
@@ -133,7 +133,7 @@ func signupHandler(w http.ResponseWriter, r *http.Request, creds *Credentials) *
 			http.StatusInternalServerError}
 	}
 
-	fmt.Fprintf(w, encodeJsonResp(true, "signup success", -1))
+	fmt.Fprintf(w, encodeJsonResp(true, "signup success"))
 
 	return nil
 }
@@ -174,7 +174,7 @@ func signinHandler(w http.ResponseWriter, r *http.Request, creds *Credentials) *
 		Expires: time.Now().Add(sessionTimeout),
 	})
 
-	fmt.Fprintf(w, encodeJsonResp(true, "signin success", -1))
+	fmt.Fprintf(w, encodeJsonResp(true, "signin success"))
 	return nil
 }
 
@@ -218,28 +218,35 @@ func ValidateSession(w http.ResponseWriter, r *http.Request) (string, SessionSta
 
 func logoutHandler(w http.ResponseWriter, r *http.Request) {
 
+	var e *appError
 	c, err := r.Cookie("session_token")
 	switch {
 	case err == http.ErrNoCookie:
 		clearCookies(w)
-		fmt.Fprintf(w, "success!")
+		fmt.Fprintf(w, encodeJsonResp(true, "no cookie item, but will clear via set-cookie"))
 		return
 	case err != nil:
-		fmt.Printf("internal error: %v\n", err)
-		http.Error(w, "Internal Error", http.StatusInternalServerError)
-		return
+		e = &appError{err, http.StatusInternalServerError}
+		goto Err
 	}
 
 	err = rdb.Del(context.Background(), c.Value).Err()
 	if err != nil {
-		fmt.Printf("fail to del token %v\n", c.Value)
-		http.Error(w, "Internal Error", http.StatusInternalServerError)
-		return
+		e = &appError{fmt.Errorf("%v: fail to del token %v", err, c.Value),
+			http.StatusInternalServerError}
+		goto Err
 	}
 
 	clearCookies(w)
 
-	fmt.Fprintf(w, "success!")
+	fmt.Fprintf(w, encodeJsonResp(true, "logout success"))
+	return
+
+Err:
+	if e.Code == http.StatusInternalServerError {
+		fmt.Println(e.Error)
+	}
+	http.Error(w, encodeJsonResp(false, e.Error.Error()), e.Code)
 }
 
 func clearCookies(w http.ResponseWriter) {
