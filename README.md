@@ -126,7 +126,7 @@ curl -d '{"username":"admin", "password":"admin"}' -c cookies.txt 127.0.0.1:8080
 127.0.0.1	FALSE	/	FALSE	1642166306	session_token	63451ff1-c832-4195-b830-90f1f99f0cd5
 
 # create a new post with cookies in the request
-curl 127.0.0.1:8080/savejs -b cookies.txt -d '{"id":0, "title":"哦哈哟", "body":"骑上我心爱的小摩托，它 永远不会堵车。"}'
+curl 127.0.0.1:8080/savejs -b cookies.txt -d '{"id":0, "title":"哦哈哟", "body":"骑上我心爱的小摩托，它永远不会堵车。"}'
 # the "id" in the response is used for identifing the post
 {
 	"success": true,
