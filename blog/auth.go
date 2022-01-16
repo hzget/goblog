@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-const sessionTimeout = 60 * 60 * time.Second
+const sessionTimeout = 30 * 24 * time.Hour
 
 type SessionStatus uint
 
