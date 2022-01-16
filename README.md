@@ -107,7 +107,24 @@ the you can start the goblog container with the same file:
 
 ## how to test
 
-### test via curl
+### automate test case written by golang
+
+just run the testcase under ***test/client*** directory with command ***go test***
+```bash
+# go test -v
+=== RUN   TestViewNtimes
+--- PASS: TestViewNtimes (14.83s)
+=== RUN   TestViewCases
+--- PASS: TestViewCases (0.00s)
+=== RUN   TestSaveAndViewNtimes
+--- PASS: TestSaveAndViewNtimes (0.08s)
+=== RUN   TestSaveAndViewCases
+--- PASS: TestSaveAndViewCases (0.00s)
+PASS
+ok  	github.com/hzget/goblog/test/client	14.917s
+```
+
+### manually test via curl
 
 ```bash
 # create a post
