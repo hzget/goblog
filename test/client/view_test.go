@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	cookie     = "session_token=b0a7abe6-3296-46f1-8138-9dd04bd3243d; user=admin"
+	cookie     = "session_token=5a844737-62f2-4121-9402-3a538684e0d9; user=admin"
 	viewjs_url = "http://127.0.0.1:8080/viewjs"
 	savejs_url = "http://127.0.0.1:8080/savejs"
 )
@@ -58,7 +58,7 @@ func encodeJson(data interface{}) string {
 func TestViewNtimes(t *testing.T) {
 	N := 10_000
 	for i := 0; i < N; i++ {
-		doTestView(t, 22)
+		doTestView(t, 1)
 	}
 }
 
@@ -68,11 +68,11 @@ func TestViewCases(t *testing.T) {
 		Body           string
 		ExpectedStatus bool
 	}{
-		{`{"id", :22}`, false}, // negative case:  malformed json format
-		{`{"i" :22}`, false},   // negative case:  unknown json key
-		{`{"id": -1}`, false},  // negative case:  invalid id
-		{`{"id": 0}`, false},   // negative case:  invalid id
-		{`{"id": 23}`, true},   // positive case:  valid id
+		{`{"id", :1}`, false}, // negative case:  malformed json format
+		{`{"i" :1}`, false},   // negative case:  unknown json key
+		{`{"id": -1}`, false}, // negative case:  invalid id
+		{`{"id": 0}`, false},  // negative case:  invalid id
+		{`{"id": 1}`, true},   // positive case:  valid id
 	}
 
 	for _, c := range cases {
@@ -88,7 +88,7 @@ func TestSaveAndViewNtimes(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			doTestSaveAndView(t, 23, "hello", "hei")
+			doTestSaveAndView(t, 2, "hello", "hei")
 		}()
 	}
 	wg.Wait()
@@ -99,8 +99,8 @@ func TestSaveAndViewCases(t *testing.T) {
 	return
 	cases := []saveReq{
 		{0, "hello", "你好"}, // create a post
-		{23, "hi", "你好\n"}, // modify a post
-		{23, "hen 好", "你\t好\n"},
+		{2, "hi", "你好\n"},  // modify a post
+		{2, "hen 好", "你\t好\n"},
 	}
 
 	for _, c := range cases {
