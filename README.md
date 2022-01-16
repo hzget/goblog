@@ -34,6 +34,15 @@ and the request will sent to data-analysis center.
 
 this module is under developping now
 
+## TO DO LIST
+
+- [ ] machine learning code
+- [x] basic test case via go
+- [ ] pprof investigation
+- [ ] fix bottleneck of the database create/update operation
+- [ ] garbage collection performance
+- [ ] other performance issue
+
 ## how to use
 
 ### Prerequisites
