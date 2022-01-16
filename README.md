@@ -107,51 +107,9 @@ the you can start the goblog container with the same file:
 
 ## how to test
 
-### automate test case written by golang
+testcase is u
 
-just run the testcase under ***test/client*** directory with command ***go test***
-```bash
-# go test -v
-=== RUN   TestViewNtimes
---- PASS: TestViewNtimes (14.83s)
-=== RUN   TestViewCases
---- PASS: TestViewCases (0.00s)
-=== RUN   TestSaveAndViewNtimes
---- PASS: TestSaveAndViewNtimes (0.08s)
-=== RUN   TestSaveAndViewCases
---- PASS: TestSaveAndViewCases (0.00s)
-PASS
-ok  	github.com/hzget/goblog/test/client	14.917s
-```
+* automate [test case](./test/client), run with command ***go test***
 
-### manually test via curl
+* manually test via ***curl*** command line
 
-```bash
-# create a new post with cookies in the request
-curl 127.0.0.1:8080/savejs -b cookies.txt -d '{"id":0, "title":"哦哈哟", "body":"骑上我心爱的小摩托，它永远不会堵车。"}'
-# the "id" in the response is used for identifing the post
-{
-	"success": true,
-	"message": "save success",
-	"id": 22
-}
-
-# get the post
-curl -b cookies.txt 127.0.0.1:8080/viewjs -d '{"id":22}'
-{
-	"success": true,
-	"message": "",
-	"id": 22,
-	"title": "哦哈哟",
-	"author": "admin",
-	"date": "2022-01-14T12:18:42Z",
-	"modified": "2022-01-14T12:18:42Z",
-	"body": "骑上我心爱的小摩托，它永远不会堵车。",
-	"postid": 0,
-	"star1": 0,
-	"star2": 0,
-	"star3": 0,
-	"star4": 0,
-	"star5": 0
-}
-```
