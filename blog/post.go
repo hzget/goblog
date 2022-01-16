@@ -2,6 +2,7 @@ package blog
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -42,6 +43,10 @@ func loadPost(id int64) (*Post, error) {
 	q := `select * from post where id = ?`
 	row := db.QueryRowContext(ctx, q, id)
 	err := row.Scan(&p.Id, &p.Title, &p.Author, &p.Date, &p.Modified, &p.Body)
+
+	if err != nil && err != sql.ErrNoRows {
+		fmt.Printf("loadPost failed: %v\n", err)
+	}
 
 	return &p, err
 }

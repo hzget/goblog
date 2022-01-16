@@ -52,9 +52,9 @@ type PageInfo struct {
 
 const (
 	PermNone   = 0
-	PermView   = 1
-	PermEdit   = 2
-	PermDelete = 3
+	PermView   = 1 << iota
+	PermEdit   = 1 << iota
+	PermDelete = 1 << iota
 )
 
 func frontpageHandler(w http.ResponseWriter, r *http.Request) {
@@ -83,7 +83,7 @@ func postlistHandler(w http.ResponseWriter, r *http.Request) {
 
 func viewHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 
-	canView := info.getPermisson() >= PermView
+	canView := info.getPermisson()&PermView > 0
 	if !canView {
 		printAlert(w, "the user is not allowed to view post", http.StatusBadRequest)
 		return
@@ -106,7 +106,7 @@ func viewHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 
 func editHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 
-	canEdit := info.getPermisson() == PermEdit
+	canEdit := info.getPermisson()&PermEdit > 0
 	if !canEdit {
 		printAlert(w, "the user is not allowed to edit post", http.StatusBadRequest)
 		return
@@ -122,7 +122,7 @@ func editHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 
 func saveHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 
-	canEdit := info.getPermisson() == PermEdit
+	canEdit := info.getPermisson()&PermEdit > 0
 	if !canEdit {
 		printAlert(w, "the user is not allowed to edit and save post", http.StatusBadRequest)
 		return
@@ -157,7 +157,7 @@ func viewjsHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) *appE
 	}
 
 	info.Id = post.Id
-	canView := info.getPermisson() >= PermView
+	canView := info.getPermisson()&PermView > 0
 	if !canView {
 		return &appError{errors.New("the user is not allowed to view post"),
 			http.StatusBadRequest}
@@ -188,7 +188,7 @@ func savejsHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) *appE
 	}
 
 	info.Id = post.Id
-	canEdit := info.getPermisson() == PermEdit
+	canEdit := info.getPermisson()&PermEdit > 0
 	if !canEdit {
 		return &appError{errors.New("the user is not allowed to edit and save post"),
 			http.StatusBadRequest}
@@ -226,7 +226,7 @@ func encodeJsonViewResp(p PostInfo) string {
 
 func deleteHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 
-	canDel := info.getPermisson() == PermDelete
+	canDel := info.getPermisson()&PermDelete > 0
 	if !canDel {
 		printAlert(w, "the user is not allowed to delete post", http.StatusBadRequest)
 		return
@@ -304,13 +304,22 @@ func makePageHandler(fn func(http.ResponseWriter, *http.Request, *PageInfo) *app
 	}
 }
 
+/*
+ * view: id exists
+ * edit: (id exists and user == author) or ( id == 0 and user is not superadmin)
+ * det : id exists and is superadmin
+ */
 func (info *PageInfo) getPermisson() int {
-	if info.Username == "superadmin" {
-		return PermDelete
+
+	if info.Id < 0 {
+		return PermNone
 	}
 
 	// create a post
 	if info.Id == 0 {
+		if info.Username == "superadmin" {
+			return PermNone
+		}
 		return PermEdit
 	}
 
@@ -319,8 +328,12 @@ func (info *PageInfo) getPermisson() int {
 		return PermNone
 	}
 
+	if info.Username == "superadmin" {
+		return PermDelete | PermView
+	}
+
 	if info.Username == post.Author {
-		return PermEdit
+		return PermEdit | PermView
 	}
 
 	return PermView
@@ -341,7 +354,7 @@ func getViewData(info *PageInfo) (interface{}, error) {
 		PostInfo
 		CanEdit   bool
 		CanDelete bool
-	}{pi, perm == PermEdit, perm == PermDelete}
+	}{pi, perm&PermEdit > 0, perm&PermDelete > 0}
 
 	return data, nil
 }
