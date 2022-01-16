@@ -38,6 +38,7 @@ this module is under developping now
 
 - [ ] machine learning code
 - [x] basic test case via go
+- [ ] rate limit of the visit
 - [ ] pprof investigation
 - [ ] fix bottleneck of the database create/update operation
 - [ ] garbage collection performance
