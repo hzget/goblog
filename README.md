@@ -107,8 +107,6 @@ the you can start the goblog container with the same file:
 
 ## how to test
 
-testcase is u
-
 * automate [test case](./test/client), run with command ***go test***
 
 * manually test via ***curl*** command line
