@@ -4,17 +4,31 @@
 
 just run the testcase under ***test/client*** directory with command ***go test***
 ```bash
-# go test -v
-=== RUN   TestViewNtimes
---- PASS: TestViewNtimes (14.83s)
+# go test -v -bench=.
+=== RUN   TestPressure
+=== RUN   TestPressure/NParallelView
+=== RUN   TestPressure/NParallelSave
+=== RUN   TestPressure/NSequentialView
+=== RUN   TestPressure/NSequentialSave
+--- PASS: TestPressure (1.70s)
+    --- PASS: TestPressure/NParallelView (0.55s)
+    --- PASS: TestPressure/NParallelSave (0.55s)
+    --- PASS: TestPressure/NSequentialView (0.30s)
+    --- PASS: TestPressure/NSequentialSave (0.29s)
 === RUN   TestViewCases
 --- PASS: TestViewCases (0.00s)
-=== RUN   TestSaveAndViewNtimes
---- PASS: TestSaveAndViewNtimes (0.08s)
+=== RUN   TestSaveCases
+--- PASS: TestSaveCases (0.02s)
 === RUN   TestSaveAndViewCases
---- PASS: TestSaveAndViewCases (0.00s)
+--- PASS: TestSaveAndViewCases (0.02s)
+goos: linux
+goarch: amd64
+pkg: github.com/hzget/goblog/test/client
+cpu: Intel(R) Core(TM) i5-7200U CPU @ 2.50GHz
+BenchmarkViewN
+BenchmarkViewN 	     709	   1647005 ns/op
 PASS
-ok  	github.com/hzget/goblog/test/client	14.917s
+ok  	github.com/hzget/goblog/test/client	4.059s
 ```
 
 ## manually test via curl test via curl

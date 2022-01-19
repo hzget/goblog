@@ -3,6 +3,7 @@ package clienttest
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -47,19 +48,27 @@ type saveResp struct {
 	ID      int64  `json:"id"`
 }
 
-func encodeJson(data interface{}) string {
-	b, err := json.MarshalIndent(data, "", "")
-	if err != nil {
-		panic(err)
+func BenchmarkViewN(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		doATest(b, viewjs_url, encodeJson(viewReq{1}), &viewResp{})
 	}
-	return string(b)
 }
 
-func TestViewNtimes(t *testing.T) {
-	N := 10_000
-	for i := 0; i < N; i++ {
-		doTestView(t, 1)
-	}
+func TestPressure(t *testing.T) {
+	// <setup code>
+	t.Run("NParallelView", func(t *testing.T) {
+		doTestNParallel(t, viewjs_url, encodeJson(viewReq{1}), &viewResp{}, 150)
+	})
+	t.Run("NParallelSave", func(t *testing.T) {
+		doTestNParallel(t, savejs_url, encodeJson(saveReq{2, "morning", "zao"}), &saveResp{}, 150)
+	})
+	t.Run("NSequentialView", func(t *testing.T) {
+		doTestNSequential(t, viewjs_url, encodeJson(viewReq{1}), &viewResp{}, 150)
+	})
+	t.Run("NSequentialSave", func(t *testing.T) {
+		doTestNSequential(t, savejs_url, encodeJson(saveReq{2, "morning", "zao"}), &saveResp{}, 150)
+	})
+	// <tear-down code>
 }
 
 func TestViewCases(t *testing.T) {
@@ -80,26 +89,33 @@ func TestViewCases(t *testing.T) {
 	}
 }
 
-func TestSaveAndViewNtimes(t *testing.T) {
+func TestSaveCases(t *testing.T) {
 
-	N := 10
-	var wg sync.WaitGroup
-	for i := 0; i < N; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			doTestSaveAndView(t, 2, "hello", "hei")
-		}()
+	cases := []struct {
+		Body           string
+		ExpectedStatus bool
+	}{
+		{`{"id": 2, "title":, "body":"你好"}`, false},           // negative case:  malformed json format
+		{`{"id": 2, "title", "body":"你好"}`, false},            // negative case:  malformed json format
+		{`{"id": 2, "title"body":"你好"}`, false},               // negative case:  malformed json format
+		{`{"id": 2, "body":"你好", "name":"hehe"}`, false},      // negative case:  unknown json key
+		{`{"id": -2, "title":"hello", "body":"你好"}`, false},   // negative case:  invalid id
+		{`{"id": "yo", "title":"hello", "body":"你好"}`, false}, // negative case:  invalid id
+		{`{"id": 2, "title":"", "body":"你好"}`, false},         // negative case:  invalid title
+		{`{"id": 2, "title":" ", "body":"你好"}`, false},        // negative case:  invalid title
+		{`{"id": 2, "title":"hello", "body":"你好"}`, true},     // positive case:  valid id, title, body
+		{`{"id": 0, "title":"hello", "body":"你好"}`, true},     // positive case:  create
 	}
-	wg.Wait()
+
+	for _, c := range cases {
+		doTestAndVerifyStatus(t, savejs_url, c.Body, &saveResp{}, c.ExpectedStatus)
+	}
 }
 
 func TestSaveAndViewCases(t *testing.T) {
 
-	return
 	cases := []saveReq{
 		{0, "hello", "你好"}, // create a post
-		{2, "hi", "你好\n"},  // modify a post
 		{2, "hen 好", "你\t好\n"},
 	}
 
@@ -108,47 +124,49 @@ func TestSaveAndViewCases(t *testing.T) {
 	}
 }
 
+/**************** helper function *****************/
+
 /*
  * doARequest send a request and decode the response
  *
  *      params: data: to store decoded response
  *
  */
-func doARequest(t *testing.T, url, bodyJson string, data interface{}) {
+func doARequest(url, bodyJson string, data interface{}) error {
 
 	// create req
 	client := &http.Client{}
 	body := strings.NewReader(bodyJson)
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
-		t.Fatalf(err.Error())
+		return err
 	}
 	req.Header.Set("Cookie", cookie)
 
 	// send req
 	resp, err := client.Do(req)
 	if err != nil {
-		t.Fatalf(err.Error())
+		return err
 	}
 	defer resp.Body.Close()
 
 	// check auth status
 	if resp.StatusCode == http.StatusUnauthorized {
-		t.Fatalf("StatusUnauthorized")
+		return errors.New("StatusUnauthorized")
 	}
 
 	// read resp
 	bodyText, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		t.Fatalf(err.Error())
+		return err
 	}
 
-	//t.Logf("req: [%s]", bodyJson)
-	// decode resp and verify the success status field
+	// decode resp
 	if err := decodeJsonResp(bodyText, data); err != nil {
-		t.Fatalf(err.Error())
+		return err
 	}
-	//t.Logf("resp: [%v]", data)
+
+	return nil
 }
 
 /*
@@ -158,12 +176,18 @@ func doARequest(t *testing.T, url, bodyJson string, data interface{}) {
  *              - url, bodyJson: is used to send request
  *              - data: response text will be decoded to its dynamic type value
  */
-func doATest(t *testing.T, url, bodyJson string, data interface{}) {
+func doATest(i interface{}, url, bodyJson string, data interface{}) {
 
-	doARequest(t, url, bodyJson, data)
+	if err := doARequest(url, bodyJson, data); err != nil {
+		handleError(i, err)
+		return
+	}
 
-	if err := verifyStatusOK(data); err != nil {
-		t.Fatalf(err.Error())
+	if !getRespStatus(data) {
+		message := getRespMessage(data)
+		err := fmt.Errorf("test failed: req [%s] and response status: false, message: %s",
+			bodyJson, message)
+		handleError(i, err)
 	}
 }
 
@@ -172,29 +196,53 @@ func doATest(t *testing.T, url, bodyJson string, data interface{}) {
  *   it can be used to test kinds of different input and output
  *
  */
-func doTestAndVerifyStatus(t *testing.T, url, bodyJson string, data interface{}, expectedStatus bool) {
+func doTestAndVerifyStatus(i interface{}, url, bodyJson string, data interface{}, expectedStatus bool) {
 
-	doARequest(t, url, bodyJson, data)
+	if err := doARequest(url, bodyJson, data); err != nil {
+		handleError(i, err)
+		return
+	}
 
-	if verified, err := verifyStatus(data, expectedStatus); !verified {
-		t.Fatalf("response expected status %v is not met. message %v ", expectedStatus, err)
+	if getRespStatus(data) != expectedStatus {
+		message := getRespMessage(data)
+		err := fmt.Errorf("req [%s] expect status '%v' is not met. message: %s",
+			bodyJson, expectedStatus, message)
+		handleError(i, err)
 	}
 }
 
-func doTestSave(t *testing.T, id int64, title, bodytext string) {
+func handleError(i interface{}, err error) {
 
-	sreq := saveReq{id, title, bodytext}
-	body := encodeJson(sreq)
-	data := &saveResp{}
-	doATest(t, savejs_url, body, data)
+	if err == nil {
+		return
+	}
+
+	switch v := i.(type) {
+	case *testing.T:
+		v.Fatal(err.Error())
+	case *testing.B:
+		v.Fatal(err.Error())
+	default:
+		fmt.Printf("unknown type %T, %v\n", v, v)
+	}
 }
 
-func doTestView(t *testing.T, id int64) {
+func doTestNParallel(t *testing.T, url, bodyJson string, data interface{}, N int) {
+	var wg sync.WaitGroup
+	for i := 0; i < N; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			doATest(t, url, bodyJson, data)
+		}()
+	}
+	wg.Wait()
+}
 
-	vreq := viewReq{id}
-	body := encodeJson(vreq)
-	data := &viewResp{}
-	doATest(t, viewjs_url, body, data)
+func doTestNSequential(t *testing.T, url, bodyJson string, data interface{}, N int) {
+	for i := 0; i < N; i++ {
+		doATest(t, url, bodyJson, data)
+	}
 }
 
 /*
@@ -236,29 +284,14 @@ func doTestSaveAndView(t *testing.T, id int64, title, body string) {
 	}
 }
 
-func verifyStatusOK(data interface{}) error {
-
+func getRespStatus(data interface{}) bool {
 	success := reflect.ValueOf(data).Elem().FieldByName("Success")
-
-	if !success.Bool() {
-		message := reflect.ValueOf(data).Elem().FieldByName("Message")
-		return fmt.Errorf("response return success-false, message: %v", message.String())
-	}
-
-	return nil
+	return success.Bool()
 }
 
-func verifyStatus(data interface{}, expectedStatus bool) (bool, error) {
-
-	success := reflect.ValueOf(data).Elem().FieldByName("Success")
-	var err error
-
-	if !success.Bool() {
-		message := reflect.ValueOf(data).Elem().FieldByName("Message")
-		err = fmt.Errorf("response return success-false, message: %v", message.String())
-	}
-
-	return success.Bool() == expectedStatus, err
+func getRespMessage(data interface{}) string {
+	message := reflect.ValueOf(data).Elem().FieldByName("Message")
+	return message.String()
 }
 
 func decodeJsonResp(body []byte, data interface{}) error {
@@ -269,4 +302,12 @@ func decodeJsonResp(body []byte, data interface{}) error {
 	}
 
 	return nil
+}
+
+func encodeJson(data interface{}) string {
+	b, err := json.Marshal(data)
+	if err != nil {
+		panic(err)
+	}
+	return string(b)
 }
