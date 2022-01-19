@@ -45,7 +45,7 @@ func (creds *Credentials) save() error {
 	ctx, cancel := context.WithTimeout(context.Background(), shortDuration)
 	defer cancel()
 
-	q := `INSERT INTO users (username, password, rank) VALUES (?, ?, ?)`
+	q := "INSERT INTO users (username, password, `rank`) VALUES (?, ?, ?)"
 
 	_, err = db.ExecContext(ctx, q, creds.Username, string(hash), "bronze")
 

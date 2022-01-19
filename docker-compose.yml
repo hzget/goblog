@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
   goblog:
-    image: hzget/goblog:1.0
+    image: hzget/goblog:1.1
     entrypoint: ["/app/goblog"]
     depends_on:
       - mysql
@@ -16,7 +16,7 @@ services:
 #      - ./:/app
 
   mysql:
-    image: mysql:5.7
+    image: mysql:8.0.27
     volumes:
       - goblog-mysql-data:/var/lib/mysql
     environment:

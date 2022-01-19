@@ -162,8 +162,8 @@ func initDBTables() {
 	ctx, cancel := context.WithTimeout(context.Background(), shortDuration)
 	defer cancel()
 
-	q := `ALTER DATABASE blog CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-        CREATE TABLE IF NOT EXISTS post(
+	//	q := `ALTER DATABASE blog CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+	q := `CREATE TABLE IF NOT EXISTS post(
           id        INT AUTO_INCREMENT NOT NULL,
           title     TINYTEXT NOT NULL,
           author    VARCHAR(10) NOT NULL,
@@ -183,8 +183,8 @@ func initDBTables() {
         );
         CREATE TABLE IF NOT EXISTS users (
           username  VARCHAR(10) NOT NULL,
-          password  VARCHAR(1024) NOT NULL,
-          rank  ENUM('bronze','silver','gold') NOT NULL,
+          password  VARCHAR(1024) NOT NULL,` +
+		"`rank`" + `ENUM('bronze','silver','gold') NOT NULL,
           PRIMARY KEY (username)
         );`
 

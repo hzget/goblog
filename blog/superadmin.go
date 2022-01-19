@@ -32,7 +32,7 @@ func getUserInfo(username string) (*UserInfo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), shortDuration)
 	defer cancel()
 
-	q := `select rank from users where username = ?`
+	q := "select `rank` from users where username = ?"
 	err := db.QueryRowContext(ctx, q, username).Scan(&info.Rank)
 
 	return info, err
@@ -44,7 +44,7 @@ func getUsersInfo() ([]UserInfo, error) {
 	defer cancel()
 
 	var s []UserInfo
-	q := `select username, rank from users`
+	q := "select username, `rank` from users"
 
 	rows, err := db.QueryContext(ctx, q)
 
@@ -112,7 +112,7 @@ func saveranksHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback()
 
-	q := `UPDATE users SET rank = ? WHERE username = ?`
+	q := "UPDATE users SET `rank` = ? WHERE username = ?"
 	for _, info := range data.Pairs {
 		_, err = tx.ExecContext(ctx, q, info.Rank, info.Username)
 		if err != nil {
