@@ -21,11 +21,11 @@ const (
 )
 
 type viewReq struct {
-	ID int64 `json:"id"`
+	Id int64 `json:"id"`
 }
 
 type saveReq struct {
-	ID    int64  `json:"id"`
+	Id    int64  `json:"id"`
 	Title string `json:"title"`
 	Body  string `json:"body"`
 }
@@ -33,7 +33,7 @@ type saveReq struct {
 type viewResp struct {
 	Success  bool      `json:"success"`
 	Message  string    `json:"message"`
-	ID       int64     `json:"id"`
+	Id       int64     `json:"id"`
 	Title    string    `json:"title"`
 	Author   string    `json:"author"`
 	Date     time.Time `json:"date"`
@@ -45,7 +45,7 @@ type viewResp struct {
 type saveResp struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
-	ID      int64  `json:"id"`
+	Id      int64  `json:"id"`
 }
 
 func BenchmarkViewN(b *testing.B) {
@@ -120,7 +120,7 @@ func TestSaveAndViewCases(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		doTestSaveAndView(t, c.ID, c.Title, c.Body)
+		doTestSaveAndView(t, c.Id, c.Title, c.Body)
 	}
 }
 
@@ -259,20 +259,20 @@ func doTestSaveAndView(t *testing.T, id int64, title, body string) {
 
 	var testId int64
 	if id == 0 {
-		testId = sdata.ID
+		testId = sdata.Id
 	} else {
 		testId = id
 	}
 
 	// view a post
-	greq := viewReq{sdata.ID}
+	greq := viewReq{sdata.Id}
 	gbody := encodeJson(greq)
 	gdata := &viewResp{}
 	doATest(t, viewjs_url, gbody, gdata)
 
 	// compare create and view
-	if testId != gdata.ID {
-		t.Fatalf("save and view id is different: [%d] vs [%d]", testId, gdata.ID)
+	if testId != gdata.Id {
+		t.Fatalf("save and view id is different: [%d] vs [%d]", testId, gdata.Id)
 	}
 
 	if title != gdata.Title {
