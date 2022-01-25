@@ -47,8 +47,9 @@ func getConfig() {
 	// attention: viper is not thread-safe
 	viper.SetConfigName("config")
 	viper.SetConfigType("json")
-	viper.AddConfigPath("blog/config")
 	viper.AddConfigPath(".")
+	viper.AddConfigPath("config")
+	viper.AddConfigPath("blog/config")
 	err := viper.ReadInConfig()
 	if err != nil {
 		panic(fmt.Errorf("Fatal error config file: %w \n", err))
