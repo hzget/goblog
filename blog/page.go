@@ -30,6 +30,16 @@ type appError struct {
 	Code  int
 }
 
+type viewReq struct {
+	Id int64 `json:"id"`
+}
+
+type saveReq struct {
+	Id    int64  `json:"id"`
+	Title string `json:"title"`
+	Body  string `json:"body"`
+}
+
 type viewResp struct {
 	jsonResp
 	PostInfo
@@ -147,23 +157,23 @@ func saveHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 
 func viewjsHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) *appError {
 
-	var post = &PageInfo{}
+	var req = &viewReq{}
 
 	// remaining issue: how to handle missing field in json?
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(post); err != nil {
+	if err := decoder.Decode(req); err != nil {
 		return &appError{err, http.StatusBadRequest}
 	}
 
-	info.Id = post.Id
+	info.Id = req.Id
 	canView := info.getPermisson()&PermView > 0
 	if !canView {
 		return &appError{errors.New("the user is not allowed to view post"),
 			http.StatusBadRequest}
 	}
 
-	data, err := getPostInfo(post.Id)
+	data, err := getPostInfo(info.Id)
 	switch {
 	case err == sql.ErrNoRows:
 		return &appError{err, http.StatusBadRequest}
@@ -178,23 +188,23 @@ func viewjsHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) *appE
 
 func savejsHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) *appError {
 
-	var post = &Post{}
+	var req = &saveReq{}
 
 	// remaining issue: how to handle missing field in json?
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(post); err != nil {
+	if err := decoder.Decode(req); err != nil {
 		return &appError{err, http.StatusBadRequest}
 	}
 
-	info.Id = post.Id
+	info.Id = req.Id
 	canEdit := info.getPermisson()&PermEdit > 0
 	if !canEdit {
 		return &appError{errors.New("the user is not allowed to edit and save post"),
 			http.StatusBadRequest}
 	}
 
-	post.Author = info.Username
+	var post = &Post{Id: req.Id, Title: req.Title, Body: req.Body, Author: info.Username}
 	if err := post.save(); err != nil {
 		return &appError{err, http.StatusInternalServerError}
 	}
