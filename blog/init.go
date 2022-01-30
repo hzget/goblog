@@ -20,6 +20,7 @@ var db *sql.DB
 var templates *template.Template
 
 const shortDuration = 3 * time.Second
+const dbStartupTime = 1 * time.Minute
 const uuidRe = `[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}`
 const postRe = `/(view|edit|save|delete)/([0-9]+)`
 
@@ -103,10 +104,18 @@ func initDBHandler() {
 		log.Fatal(err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), shortDuration)
+	ctx, cancel := context.WithTimeout(context.Background(), dbStartupTime)
 	defer cancel()
 
-	if err = db.PingContext(ctx); err != nil {
+	// wait for the database startup
+	for c := 0; c < 6; c++ {
+		if err = db.PingContext(ctx); err == nil {
+			break
+		}
+		time.Sleep(time.Second * 10)
+	}
+
+	if err != nil {
 		log.Fatal(err)
 	}
 
