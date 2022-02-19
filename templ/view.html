@@ -70,6 +70,21 @@
 
           updateRating()
         });
+
+        function analyze(postid) {
+            jsdata = JSON.stringify({"how": 2, "id": {{.Id}}})
+            $.ajax({url: "../analyze",
+                data: jsdata,
+                contentType : 'application/json',
+                type: 'POST',
+                success: function(result,status,xhr){
+                    displayDialog("Analysis Result", result);
+                },
+                error: function(xhr,status,error){
+                    displayDialog(error, xhr.responseText , "w3-red")
+                }
+            })
+        }
     </script>
     </head>
     <body>
@@ -83,6 +98,8 @@
         <sub>by {{.Author}}</sub>
         </h3>
         <pre>{{.Body}}</pre>
+        <br><br>
+        <form> <input type="button" class="w3-button w3-dark-grey" onclick='analyze({{.Id}})' value="Analyze"> </form>
         <br><br>
         Ratings:
         <ol class="ratings">

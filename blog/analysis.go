@@ -14,9 +14,15 @@ import (
 
 type AnalyzeHow int64
 
+const (
+	ByAuthor = 1
+	ByPostId = 2
+)
+
 type AnalyzeReq struct {
 	How    AnalyzeHow `json:"how"`
 	Author string     `json:"author"`
+	PostId int64      `json:"id"`
 }
 
 func analysisHandler(w http.ResponseWriter, r *http.Request) {
@@ -64,14 +70,26 @@ func analyzeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a := &AnalyzeReq{}
+	req := &AnalyzeReq{}
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(a); err != nil {
+	if err := decoder.Decode(req); err != nil {
 		fmt.Println(err)
 		http.Error(w, fmt.Sprintf("failed to decode request %v", err), http.StatusBadRequest)
 		return
 	}
+
+	switch req.How {
+	case ByAuthor:
+		analyzeAuthorHandler(w, r, user, req)
+	case ByPostId:
+		analyzePostHandler(w, r, req)
+	}
+
+	return
+}
+
+func analyzeAuthorHandler(w http.ResponseWriter, r *http.Request, user string, a *AnalyzeReq) {
 
 	userinfo, err := getUserInfo(user)
 	switch {
@@ -128,4 +146,39 @@ func AnalyzeByAuthor(name string) int32 {
 	log.Printf("Analysis result: %d\n", r.GetScore())
 
 	return r.GetScore()
+}
+
+func analyzePostHandler(w http.ResponseWriter, r *http.Request, req *AnalyzeReq) {
+
+	data, err := loadPost(req.PostId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	result := AnalyzePost(data.Body)
+
+	fmt.Fprintf(w, "text class analysis result: %v", result)
+}
+
+func AnalyzePost(text string) string {
+
+	conn, err := grpc.Dial(dataAnalysisAddress, grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
+	}
+	defer conn.Close()
+
+	c := pb.NewDataAnalysisClient(conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	r, err := c.AnalyzePost(ctx, &pb.Text{Text: text})
+	if err != nil {
+		log.Fatalf("could not analyze: %v", err)
+	}
+
+	log.Printf("Analysis result: %s\n", r.GetResult())
+
+	return r.GetResult()
 }
