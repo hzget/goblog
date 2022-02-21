@@ -5,9 +5,9 @@ these articles via AI algorithms.
 
 ## UI
 
-view a post | edit a post | analysis
-:----------:|:-----------:|:-------:
-![view](./pic/view.png)|![edit](./pic/edit.png)|![analysis](./pic/analysis.png)
+view a post | edit a post | analysis | analyze one post | analysis result|
+:----------:|:-----------:|:-------:|:------:|:------:
+![view](./pic/view.png)|![edit](./pic/edit.png)|![analysis](./pic/analysis.png)|![rawpost](https://github.com/hzget/hzget.github.io/blob/feature/neural_networks/pics/analysis_raw.png)|![result](https://github.com/hzget/hzget.github.io/blob/feature/neural_networks/pics/analysis_result.png)
 
 ## functions
 
