@@ -35,7 +35,7 @@ services:
       - ALLOW_EMPTY_PASSWORD=yes
 
   analysis:
-    image: hzget/analysis:latest
+    image: hzget/analysis:1.0
     entrypoint: ["python", "analysis_server.py"]
 
 volumes:
