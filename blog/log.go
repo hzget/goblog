@@ -17,13 +17,24 @@ func initLogging() {
 		log.Fatal().Err(err).Msg("failed when open log file")
 	}
 
+	hostname, err := os.Hostname()
+	if err != nil {
+		log.Warn().Err(err).Msg("failed when open log file")
+		hostname = "-"
+	}
+
 	level, err := zerolog.ParseLevel(loglevel)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to parse log level")
 	}
 
 	zerolog.SetGlobalLevel(level)
-	logger = zerolog.New(logfile).With().Timestamp().Logger()
+	logger = zerolog.New(logfile).With().
+		Str("service", "goblog").
+		Str("hostname", hostname).
+		Timestamp().
+		Logger()
+
 }
 
 func closeLogFile() {
