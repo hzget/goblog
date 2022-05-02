@@ -34,6 +34,13 @@ ok  	github.com/hzget/goblog/test/client	4.059s
 ## manually test via curl test via curl
 
 ```bash
+# register an access tocken (just make use of the signin restful api)
+$ curl http://127.0.0.1:8080/signin -c cookies.txt -d '{"username":"admin", "password":"admin"}'
+# output:
+{
+	"success": true,
+	"message": "signin success"
+}
 # create a post
 $ curl http://127.0.0.1:8080/savejs -b cookies.txt -d '{"id":0, "title":"哦哈哟", "body":"骑上我心爱的小摩托，它永远不会堵车。"}'
 # output:
