@@ -4,6 +4,10 @@
         "viewcode": true,
         "initdbtable": true
     },
+    "log": {
+	    "file": "log/log.txt",
+	    "level": "debug"
+    },
     "page": {
         "randomprefix": false,
         "framework": "w3css"

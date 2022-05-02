@@ -179,6 +179,7 @@ func AnalyzePost(text string) string {
 	}
 
 	log.Printf("Analysis result: %s\n", r.GetResult())
+	Debug(fmt.Sprintf("Analysis result: %s\n", r.GetResult()))
 
 	return r.GetResult()
 }

@@ -14,14 +14,18 @@ func Run(addr string) {
 
 	initGlobals()
 
+	defer closeLogFile()
+
 	var srv = &http.Server{Addr: addr}
 
-	go startHttpServer(srv)
+	var c = make(chan struct{}, 1)
 
-	gracefullyShutdown(srv)
+	go startHttpServer(srv, c)
+
+	gracefullyShutdown(srv, c)
 }
 
-func gracefullyShutdown(srv *http.Server) {
+func gracefullyShutdown(srv *http.Server, c <-chan struct{}) {
 
 	sigint := make(chan os.Signal, 1)
 	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
@@ -36,10 +40,14 @@ func gracefullyShutdown(srv *http.Server) {
 		log.Printf("HTTP server Shutdown: %v\n", err)
 	}
 
+	<-c
+
 	log.Printf("HTTP server is shutdown\n")
+	Info("HTTP server is shutdown\n")
+
 }
 
-func startHttpServer(srv *http.Server) {
+func startHttpServer(srv *http.Server, c chan<- struct{}) {
 
 	if debugViewCode {
 		http.Handle(sitePrefix+"/code/", http.StripPrefix(
@@ -75,4 +83,7 @@ func startHttpServer(srv *http.Server) {
 	}
 
 	log.Printf("HTTP server stop receiving new request\n")
+	Info("HTTP server stop receiving new request\n")
+
+	c <- struct{}{}
 }

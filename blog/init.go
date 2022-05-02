@@ -33,8 +33,12 @@ var sitePrefix string
 var siteRe string
 var dataAnalysisAddress string
 
+var logfilename string
+var loglevel string
+
 func initGlobals() {
 	getConfig()
+	initLogging()
 	initDebugMode()
 	initPagePrefix()
 	initRedisClient()
@@ -55,6 +59,9 @@ func getConfig() {
 	if err != nil {
 		panic(fmt.Errorf("Fatal error config file: %w \n", err))
 	}
+
+	logfilename = viper.GetString("log.file")
+	loglevel = viper.GetString("log.level")
 }
 
 func initDebugMode() {
