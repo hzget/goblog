@@ -155,7 +155,7 @@ func signinHandler(w http.ResponseWriter, r *http.Request, creds *Credentials) *
 	}
 
 	token := uuid.NewString()
-	err = rdb.Set(context.Background(), token, creds.Username, sessionTimeout).Err()
+	err = rdb.Set(context.Background(), creds.Username, token, sessionTimeout).Err()
 	if err != nil {
 		return &appError{fmt.Errorf("fail to set token for user %v", creds.Username),
 			http.StatusInternalServerError}
@@ -197,7 +197,7 @@ func ValidateSession(w http.ResponseWriter, r *http.Request) (string, SessionSta
 		return "", SessionInternalError
 	}
 
-	user, err := rdb.Get(context.Background(), c.Value).Result()
+	token, err := rdb.Get(context.Background(), cuser.Value).Result()
 	switch {
 	case err == redis.Nil:
 		return "", SessionUnauthorized
@@ -206,20 +206,19 @@ func ValidateSession(w http.ResponseWriter, r *http.Request) (string, SessionSta
 		return "", SessionInternalError
 	}
 
-	//fmt.Printf("sid %v, suser %v, user %v\n", c.Value, cuser.Value, user)
-	if user != cuser.Value {
-		fmt.Printf("error: user unmatched %v, %v\n", user, cuser.Value)
+	if token != c.Value {
+		fmt.Printf("error: %v token unmatched %v, %v\n", cuser.Value, c.Value, token)
 		clearCookies(w)
 		return "", SessionUnauthorized
 	}
 
-	return user, SessionAuthorized
+	return cuser.Value, SessionAuthorized
 }
 
 func logoutHandler(w http.ResponseWriter, r *http.Request) {
 
 	var e *appError
-	c, err := r.Cookie("session_token")
+	c, err := r.Cookie("user")
 	switch {
 	case err == http.ErrNoCookie:
 		clearCookies(w)
@@ -232,7 +231,7 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = rdb.Del(context.Background(), c.Value).Err()
 	if err != nil {
-		e = &appError{fmt.Errorf("%v: fail to del token %v", err, c.Value),
+		e = &appError{fmt.Errorf("%v: fail to del user %v", err, c.Value),
 			http.StatusInternalServerError}
 		goto Err
 	}
