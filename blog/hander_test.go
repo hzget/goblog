@@ -14,13 +14,26 @@ import (
 	"testing"
 )
 
-const (
-	cookie = "session_token=5a844737-62f2-4121-9402-3a538684e0d9; user=admin"
+var (
+	cookie      = "session_token=5a844737-62f2-4121-9402-3a538684e0d9; user=admin"
+	signin_url  = "http://127.0.0.1:8080/signin"
+	signin_user = "admin"
+	signin_pwd  = "admin"
 )
 
 func TestMain(m *testing.M) {
 	// <setup code>
+	// be carefull! you should change config/config.json according to reality
+	//       address of mysql, redis, analysis center, and log file path
+	// and then do a test
 	initGlobals()
+
+	// signin to get a token saving in the cookies
+	if err := signinAndSaveCookie(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+		return
+	}
 
 	code := m.Run()
 
@@ -28,6 +41,62 @@ func TestMain(m *testing.M) {
 
 	// exit
 	os.Exit(code)
+}
+
+func doASignin(url, bodyJson string) *http.Response {
+
+	// create req
+	body := strings.NewReader(bodyJson)
+	req := httptest.NewRequest("POST", url, body)
+
+	// mock a signin req
+	w := httptest.NewRecorder()
+	makeAuthHandler(signinHandler)(w, req)
+
+	// get response
+	return w.Result()
+}
+
+func signinAndSaveCookie() error {
+
+	resp := doASignin(signin_url, encodeJson(Credentials{signin_user, signin_pwd}))
+
+	// read resp
+	bodyText, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	// decode resp
+	result := &jsonResp{}
+	if err := decodeJsonResp(bodyText, result); err != nil {
+		return err
+	}
+
+	// check result
+	if !result.Success {
+		return errors.New(result.Message)
+	}
+
+	//Cookies() []*Cookie
+	cookies := resp.Cookies()
+	var token, user string
+	for _, v := range cookies {
+		switch v.Name {
+		case "session_token":
+			token = v.Value
+		case "user":
+			user = v.Value
+		}
+	}
+
+	if token != "" && user != "" {
+		cookie = "session_token=" + token + "; user=" + user
+		return nil
+	}
+
+	return fmt.Errorf("cookie is unexpectied:%v", cookies)
+
 }
 
 func TestHandler(t *testing.T) {
