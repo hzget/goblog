@@ -25,7 +25,7 @@ func BenchmarkViewjs(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		body := strings.NewReader(encodeJson(viewReq{1}))
-		req := httptest.NewRequest("POST", "/viewjs, body)
+		req := httptest.NewRequest("POST", "/viewjs", body)
 		req.Header.Set("Cookie", cookie)
 		handler(w, req)
 	}
