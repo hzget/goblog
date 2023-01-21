@@ -52,6 +52,18 @@ func (creds *Credentials) save() error {
 	return err
 }
 
+func (creds *Credentials) remove() error {
+
+	ctx, cancel := context.WithTimeout(context.Background(), shortDuration)
+	defer cancel()
+
+	q := "DELETE FROM users where username = ?"
+
+	_, err := db.ExecContext(ctx, q, creds.Username)
+
+	return err
+}
+
 func checkUserExist(username string) (bool, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), shortDuration)
@@ -76,6 +88,10 @@ func getPassword(username string) (string, error) {
 	return password, err
 }
 
+func validateHash(origin, hash string) error {
+	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(origin))
+}
+
 func makeAuthHandler(fn func(http.ResponseWriter, *http.Request, *Credentials) *appError) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -88,7 +104,8 @@ func makeAuthHandler(fn func(http.ResponseWriter, *http.Request, *Credentials) *
 		decoder := json.NewDecoder(r.Body)
 		decoder.DisallowUnknownFields()
 		if err = decoder.Decode(creds); err != nil {
-			e = &appError{err, http.StatusBadRequest}
+			e = &appError{fmt.Errorf("fail to decode creds: %v", err),
+				http.StatusBadRequest}
 			goto Err
 		}
 
@@ -143,7 +160,7 @@ func signinHandler(w http.ResponseWriter, r *http.Request, creds *Credentials) *
 	hash, err := getPassword(creds.Username)
 	switch {
 	case err == sql.ErrNoRows:
-		return &appError{fmt.Errorf("no such user %v, %v", creds.Username, err), http.StatusUnauthorized}
+		return &appError{fmt.Errorf("no such user %v", creds.Username), http.StatusUnauthorized}
 	case err != nil:
 		return &appError{fmt.Errorf("fail to get password for user %v, %v", creds.Username, err),
 			http.StatusInternalServerError}
@@ -197,7 +214,7 @@ func ValidateSession(w http.ResponseWriter, r *http.Request) (string, SessionSta
 		return "", SessionInternalError
 	}
 
-	token, err := rdb.Get(context.Background(), cuser.Value).Result()
+	token, err := checkKey(cuser.Value)
 	switch {
 	case err == redis.Nil:
 		return "", SessionUnauthorized
@@ -215,6 +232,14 @@ func ValidateSession(w http.ResponseWriter, r *http.Request) (string, SessionSta
 	return cuser.Value, SessionAuthorized
 }
 
+func checkKey(name string) (string, error) {
+	return rdb.Get(context.Background(), name).Result()
+}
+
+func removeKey(name string) error {
+	return rdb.Del(context.Background(), name).Err()
+}
+
 func logoutHandler(w http.ResponseWriter, r *http.Request) {
 
 	var e *appError
@@ -229,7 +254,7 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 		goto Err
 	}
 
-	err = rdb.Del(context.Background(), c.Value).Err()
+	err = removeKey(c.Value)
 	if err != nil {
 		e = &appError{fmt.Errorf("%v: fail to del user %v", err, c.Value),
 			http.StatusInternalServerError}

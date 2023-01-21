@@ -32,6 +32,7 @@ var randomSitePrefix = false
 var sitePrefix string
 var siteRe string
 var dataAnalysisAddress string
+var templpath = "./"
 
 var logfilename string
 var loglevel string
@@ -158,14 +159,19 @@ func initTemplate() {
 
 	initFuncMap()
 
+	templpath = viper.GetString("template.path")
 	if debugPage {
 		return
 	}
 
 	t, err := template.New("").Funcs(funcMap).ParseFiles(
-		"templ/view.html", "templ/edit.html", "templ/frontpage.html",
-		"templ/analysis.html", "templ/useradmin.html", "templ/alert.html",
-		"templ/inspect.html",
+		templpath+"templ/view.html",
+		templpath+"templ/edit.html",
+		templpath+"templ/frontpage.html",
+		templpath+"templ/analysis.html",
+		templpath+"templ/useradmin.html",
+		templpath+"templ/alert.html",
+		templpath+"templ/inspect.html",
 	)
 	templates = template.Must(t, err)
 }

@@ -9,6 +9,23 @@ view a post | edit a post | analysis | analyze one post | analysis result|
 :----------:|:-----------:|:-------:|:------:|:------:
 ![view](./pic/view.png)|![edit](./pic/edit.png)|![analysis](./pic/analysis.png)|![rawpost](https://github.com/hzget/hzget.github.io/blob/feature/neural_networks/pics/analysis_raw.png)|![result](https://github.com/hzget/hzget.github.io/blob/feature/neural_networks/pics/analysis_result.png)
 
+## Performance
+
+```golang
+goos: linux
+goarch: amd64
+pkg: github.com/hzget/goblog/blog
+cpu: Intel(R) Core(TM) i5-7200U CPU @ 2.50GHz
+BenchmarkSigninWrapper
+BenchmarkSigninWrapper 	      39	  28470708 ns/op	   22471 B/op	     202 allocs/op
+BenchmarkViewHandler
+BenchmarkViewHandler   	      46	  28989517 ns/op	   67169 B/op	     676 allocs/op
+BenchmarkViewjs
+BenchmarkViewjs        	     100	  12665127 ns/op	   13074 B/op	     128 allocs/op
+PASS
+ok  	github.com/hzget/goblog/blog	6.501s
+```
+
 ## functions
 
 ### work as a blog site

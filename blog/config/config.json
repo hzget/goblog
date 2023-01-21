@@ -8,6 +8,9 @@
 	    "file": "log/log.txt",
 	    "level": "debug"
     },
+    "template": {
+	    "path": "./"
+    },
     "page": {
         "randomprefix": false,
         "framework": "w3css"

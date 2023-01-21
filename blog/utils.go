@@ -26,9 +26,10 @@ func printAlert(w http.ResponseWriter, msg string, code int) {
 
 func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
 	if debugPage {
-		t, err := template.New(tmpl).Funcs(funcMap).ParseFiles("templ/" + tmpl)
+		t, err := template.New(tmpl).Funcs(funcMap).ParseFiles(templpath + "templ/" + tmpl)
 		if err != nil {
-			printAlert(w, err.Error(), http.StatusInternalServerError)
+			// it may fall into a loop if alert.html not found
+			//	printAlert(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
