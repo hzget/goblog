@@ -63,10 +63,12 @@ func analyzeHandler(w http.ResponseWriter, r *http.Request) {
 	user, status := ValidateSession(w, r)
 	switch status {
 	case SessionUnauthorized:
-		http.Error(w, "please log in first", http.StatusUnauthorized)
+		http.Error(w, encodeJsonResp(false, "please log in first"),
+			http.StatusUnauthorized)
 		return
 	case SessionInternalError:
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		http.Error(w, encodeJsonResp(false, "internal error"),
+			http.StatusInternalServerError)
 		return
 	}
 
@@ -74,18 +76,41 @@ func analyzeHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(req); err != nil {
-		fmt.Println(err)
-		http.Error(w, fmt.Sprintf("failed to decode request %v", err), http.StatusBadRequest)
+		//fmt.Println(err)
+		http.Error(w, encodeJsonResp(false,
+			fmt.Sprintf("failed to decode request %v", err)),
+			http.StatusBadRequest)
 		return
 	}
 
+	var result string
+	var err error
 	switch req.How {
 	case ByAuthor:
 		analyzeAuthorHandler(w, r, user, req)
+		return
 	case ByPostId:
-		analyzePostHandler(w, r, req)
+		result, err = analyzePostHandler(w, r, req)
+	default:
+		err = fmt.Errorf("req.How(%d) illegal", req.How)
+		http.Error(w, encodeJsonResp(false, err.Error()),
+			http.StatusBadRequest)
+		return
 	}
 
+	if err == sql.ErrNoRows {
+		http.Error(w, encodeJsonResp(false, err.Error()),
+			http.StatusBadRequest)
+		return
+	}
+
+	if err != nil {
+		http.Error(w, encodeJsonResp(false, err.Error()),
+			http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintf(w, encodeJsonResp(true, result))
 	return
 }
 
@@ -148,23 +173,20 @@ func AnalyzeByAuthor(name string) int32 {
 	return r.GetScore()
 }
 
-func analyzePostHandler(w http.ResponseWriter, r *http.Request, req *AnalyzeReq) {
+func analyzePostHandler(w http.ResponseWriter, r *http.Request, req *AnalyzeReq) (string, error) {
 
 	data, err := loadPost(req.PostId)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return "", err
 	}
-	result := AnalyzePost(data.Body)
-
-	fmt.Fprintf(w, "text class analysis result: %v", result)
+	return AnalyzePost(data.Body)
 }
 
-func AnalyzePost(text string) string {
+func AnalyzePost(text string) (string, error) {
 
 	conn, err := grpc.Dial(dataAnalysisAddress, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
-		log.Fatalf("did not connect: %v", err)
+		return "", fmt.Errorf("did not connect: %v", err)
 	}
 	defer conn.Close()
 
@@ -175,11 +197,11 @@ func AnalyzePost(text string) string {
 
 	r, err := c.AnalyzePost(ctx, &pb.Text{Text: text})
 	if err != nil {
-		log.Fatalf("could not analyze: %v", err)
+		return "", fmt.Errorf("could not analyze: %v", err)
 	}
 
-	log.Printf("Analysis result: %s\n", r.GetResult())
+	//log.Printf("Analysis result: %s\n", r.GetResult())
 	Debug(fmt.Sprintf("Analysis result: %s\n", r.GetResult()))
 
-	return r.GetResult()
+	return r.GetResult(), nil
 }

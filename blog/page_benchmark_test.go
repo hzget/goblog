@@ -1,9 +1,9 @@
 package blog
 
 import (
-	"testing"
 	"net/http/httptest"
 	"strings"
+	"testing"
 )
 
 func BenchmarkViewHandler(b *testing.B) {
@@ -31,4 +31,3 @@ func BenchmarkViewjs(b *testing.B) {
 	}
 
 }
-

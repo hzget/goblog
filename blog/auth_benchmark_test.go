@@ -1,9 +1,9 @@
 package blog
 
 import (
-	"testing"
 	"net/http/httptest"
 	"strings"
+	"testing"
 )
 
 func BenchmarkSigninWrapper(b *testing.B) {
@@ -26,5 +26,3 @@ func BenchmarkSigninWrapper(b *testing.B) {
 		handler(w, req)
 	}
 }
-
-
