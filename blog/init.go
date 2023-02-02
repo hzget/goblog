@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
 	"regexp"
 	"text/template"
 	"time"
@@ -64,11 +63,7 @@ func getConfig() {
 
 	logfilename = viper.GetString("log.file")
 	loglevel = viper.GetString("log.level")
-	var dir string
-	if v, err := os.Getwd(); err == nil {
-		dir = v
-	}
-	fmt.Printf("log level [%s], file: %s\n", loglevel, dir+logfilename)
+	fmt.Printf("log level [%s], file: %s\n", loglevel, logfilename)
 }
 
 func initDebugMode() {

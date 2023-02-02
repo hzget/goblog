@@ -34,6 +34,7 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 // add a middleware
+// not thread-safe
 func (r *router) Use(handler http.Handler) Handler {
 	r.handlers = append(r.handlers, handler)
 	return r
