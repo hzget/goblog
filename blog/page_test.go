@@ -39,6 +39,7 @@ func TestMain(m *testing.M) {
 
 	// <tear-down code>
 
+	closeLogFile()
 	// exit
 	os.Exit(code)
 }

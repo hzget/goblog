@@ -16,7 +16,13 @@ func Run(addr string) {
 
 	defer closeLogFile()
 
-	var srv = &http.Server{Addr: addr}
+	h := NewHandler()
+	h.Use(HttpLogger(nil))
+
+	var srv = &http.Server{
+		Addr:    addr,
+		Handler: h,
+	}
 
 	var c = make(chan struct{}, 1)
 
