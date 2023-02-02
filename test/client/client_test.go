@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"reflect"
 	"strings"
 	"sync"
@@ -15,9 +16,15 @@ import (
 )
 
 const (
-	cookie     = "session_token=5a844737-62f2-4121-9402-3a538684e0d9; user=admin"
 	viewjs_url = "http://127.0.0.1:8080/viewjs"
 	savejs_url = "http://127.0.0.1:8080/savejs"
+)
+
+var (
+	cookie      = "session_token=5a844737-62f2-4121-9402-3a538684e0d9; user=admin"
+	signin_url  = "http://127.0.0.1:8080/signin"
+	signin_user = "admin"
+	signin_pwd  = "admin"
 )
 
 type viewReq struct {
@@ -46,6 +53,97 @@ type saveResp struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 	Id      int64  `json:"id"`
+}
+
+type Credentials struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type jsonResp struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}
+
+func TestMain(m *testing.M) {
+	// <setup code>
+
+	// signin to get a token saving in the cookies
+	if err := signinAndSaveCookie(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+		return
+	}
+
+	code := m.Run()
+
+	// <tear-down code>
+
+	// exit
+	os.Exit(code)
+}
+
+func signinAndSaveCookie() error {
+
+	bodyJson := encodeJson(Credentials{signin_user, signin_pwd})
+	result := &jsonResp{}
+	url := signin_url
+
+	// create req
+	client := &http.Client{}
+	body := strings.NewReader(bodyJson)
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Cookie", cookie)
+
+	// send req
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// check auth status
+	if resp.StatusCode == http.StatusUnauthorized {
+		return errors.New("StatusUnauthorized")
+	}
+
+	// read resp
+	bodyText, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	// decode resp
+	if err := decodeJsonResp(bodyText, result); err != nil {
+		return err
+	}
+
+	// check result
+	if !result.Success {
+		return errors.New(result.Message)
+	}
+
+	//Cookies() []*Cookie
+	cookies := resp.Cookies()
+	var token, user string
+	for _, v := range cookies {
+		switch v.Name {
+		case "session_token":
+			token = v.Value
+		case "user":
+			user = v.Value
+		}
+	}
+
+	if token != "" && user != "" {
+		cookie = "session_token=" + token + "; user=" + user
+		return nil
+	}
+
+	return fmt.Errorf("cookie is unexpectied:%v", cookies)
 }
 
 func BenchmarkViewN(b *testing.B) {
