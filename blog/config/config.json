@@ -5,7 +5,7 @@
         "initdbtable": true
     },
     "log": {
-	    "file": "log/log.txt",
+	    "file": "log.txt",
 	    "level": "debug"
     },
     "template": {
