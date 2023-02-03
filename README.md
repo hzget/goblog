@@ -56,9 +56,11 @@ this module is under developping now
 - [ ] machine learning code
 - [x] basic test case via go
 - [x] record leveled logs to a file
+- [x] support middleware
+- [x] support cache for mysql
 - [ ] rate limit of the visit
 - [ ] pprof investigation
-- [ ] fix bottleneck of the database create/update operation
+- [x] fix bottleneck of the database create/update operation
 - [ ] garbage collection performance
 - [ ] other performance issue
 

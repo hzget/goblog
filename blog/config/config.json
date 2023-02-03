@@ -4,6 +4,9 @@
         "viewcode": true,
         "initdbtable": true
     },
+    "cache": {
+        "mysql": true
+    },
     "log": {
 	    "file": "log.txt",
 	    "level": "debug"

@@ -2,7 +2,6 @@ package blog
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -40,13 +39,21 @@ func loadPost(id int64) (*Post, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), shortDuration)
 	defer cancel()
 
-	q := `select * from post where id = ?`
+	key := Key_SQL_loadPost + fmt.Sprintf("%d", id)
+	if err := DBGetCache(key, &p); err == nil {
+		return &p, nil
+	}
+
+	q := Key_SQL_loadPost + `?`
 	row := db.QueryRowContext(ctx, q, id)
 	err := row.Scan(&p.Id, &p.Title, &p.Author, &p.Date, &p.Modified, &p.Body)
 
-	if err != nil && err != sql.ErrNoRows {
-		fmt.Printf("loadPost failed: %v\n", err)
+	if err != nil {
+		Info("logPost:" + err.Error())
+		return nil, err
 	}
+
+	DBUpdateCache(key, &p)
 
 	return &p, err
 }
@@ -121,6 +128,9 @@ func (p *Post) save() error {
 		if err != nil {
 			return fail(err)
 		}
+		id := fmt.Sprintf("%d", p.Id)
+		DBRemoveCache(Key_SQL_GetPostInfo + id)
+		DBRemoveCache(Key_SQL_loadPost + id)
 	}
 
 	return nil
@@ -130,6 +140,9 @@ func DeletePost(id int64) error {
 
 	q := `DELETE FROM post WHERE id = ?`
 	_, err := db.Exec(q, id)
+	s := fmt.Sprintf("%d", id)
+	DBRemoveCache(Key_SQL_GetPostInfo + s)
+	DBRemoveCache(Key_SQL_loadPost + s)
 	return err
 }
 
@@ -139,20 +152,21 @@ func getPostInfo(id int64) (PostInfo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), shortDuration)
 	defer cancel()
 
-	q := `SELECT post.*, ` +
-		`IFNULL(poststatistics.star1,0), ` +
-		`IFNULL(poststatistics.star2,0), ` +
-		`IFNULL(poststatistics.star3,0), ` +
-		`IFNULL(poststatistics.star4,0), ` +
-		`IFNULL(poststatistics.star5,0)  ` +
-		`FROM post ` +
-		`LEFT JOIN poststatistics ` +
-		`ON post.id = poststatistics.postid ` +
-		`WHERE post.id = ?`
+	key := Key_SQL_GetPostInfo + fmt.Sprintf("%d", id)
+	if err := DBGetCache(key, &p); err == nil {
+		return p, nil
+	}
 
-	row := db.QueryRowContext(ctx, q, id)
+	row := db.QueryRowContext(ctx, Key_SQL_GetPostInfo+"?", id)
 	err := row.Scan(&p.Id, &p.Title, &p.Author, &p.Date, &p.Modified, &p.Body,
 		&p.Star[0], &p.Star[1], &p.Star[2], &p.Star[3], &p.Star[4])
+
+	if err != nil {
+		Info("getPostInfo:" + err.Error())
+		return p, err
+	}
+
+	DBUpdateCache(key, &p)
 
 	return p, err
 }

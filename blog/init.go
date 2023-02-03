@@ -33,6 +33,7 @@ var sitePrefix string
 var siteRe string
 var dataAnalysisAddress string
 var templpath = "./"
+var dbcache = false
 
 var logfilename string
 var loglevel string
@@ -46,6 +47,7 @@ func initGlobals() {
 	initDBHandler()
 	initDBTables()
 	initDataAnalysis()
+	initCache()
 	initTemplate()
 }
 
@@ -64,6 +66,10 @@ func getConfig() {
 	logfilename = viper.GetString("log.file")
 	loglevel = viper.GetString("log.level")
 	fmt.Printf("log level [%s], file: %s\n", loglevel, logfilename)
+}
+
+func initCache() {
+	dbcache = viper.GetBool("cache.mysql")
 }
 
 func initDebugMode() {

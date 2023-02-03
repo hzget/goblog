@@ -1,8 +1,6 @@
 package blog
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -11,6 +9,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -70,7 +69,7 @@ func signinAndSaveCookie() error {
 
 	// decode resp
 	result := &jsonResp{}
-	if err := decodeJsonResp(bodyText, result); err != nil {
+	if err := decodeJson(bodyText, result); err != nil {
 		return err
 	}
 
@@ -100,13 +99,28 @@ func signinAndSaveCookie() error {
 
 }
 
-func TestHandler(t *testing.T) {
+func TestJSHandler(t *testing.T) {
 	t.Run("Viewjs", func(t *testing.T) {
 		doATest(t, makePageHandler(viewjsHandler), encodeJson(viewReq{1}), &viewResp{})
 	})
 	t.Run("Savejs", func(t *testing.T) {
 		doATest(t, makePageHandler(savejsHandler), encodeJson(saveReq{1, "S", "nihao"}), &saveResp{})
 	})
+}
+
+func TestPressureViewJs(t *testing.T) {
+	// update cache before check to avoid frequent update
+	doATest(t, makePageHandler(viewjsHandler), encodeJson(viewReq{1}), &viewResp{})
+	var wg sync.WaitGroup
+	N := 1000
+	for i := 0; i < N; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			doATest(t, makePageHandler(viewjsHandler), encodeJson(viewReq{1}), &viewResp{})
+		}()
+	}
+	wg.Wait()
 }
 
 func doARequest(handler http.HandlerFunc, url, bodyJson string, data interface{}) error {
@@ -135,7 +149,7 @@ func doARequest(handler http.HandlerFunc, url, bodyJson string, data interface{}
 	}
 
 	// decode resp
-	if err := decodeJsonResp(bodyText, data); err != nil {
+	if err := decodeJson(bodyText, data); err != nil {
 		return err
 	}
 
@@ -188,14 +202,4 @@ func getRespStatus(data interface{}) bool {
 func getRespMessage(data interface{}) string {
 	message := reflect.ValueOf(data).Elem().FieldByName("Message")
 	return message.String()
-}
-
-func decodeJsonResp(body []byte, data interface{}) error {
-	decoder := json.NewDecoder(bytes.NewReader(body))
-	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(data); err != nil {
-		return err
-	}
-
-	return nil
 }

@@ -14,6 +14,7 @@ package blog
  */
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -222,6 +223,16 @@ func encodeJson(data interface{}) string {
 	return string(b)
 }
 
+func decodeJson(body []byte, data interface{}) error {
+	decoder := json.NewDecoder(bytes.NewReader(body))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(data); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func encodeJsonResp(success bool, msg string) string {
 	return encodeJson(&jsonResp{success, msg})
 }
@@ -317,7 +328,7 @@ func makePageHandler(fn func(http.ResponseWriter, *http.Request, *PageInfo) *app
 /*
  * view: id exists
  * edit: (id exists and user == author) or ( id == 0 and user is not superadmin)
- * det : id exists and is superadmin
+ * del : id exists and is superadmin
  */
 func (info *PageInfo) getPermisson() int {
 

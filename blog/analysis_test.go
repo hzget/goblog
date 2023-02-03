@@ -41,7 +41,7 @@ func TestAnalyzeHandler(t *testing.T) {
 			}
 
 			got := jsonResp{}
-			if err := decodeJsonResp(body, &got); err != nil {
+			if err := decodeJson(body, &got); err != nil {
 				t.Fatalf("fail to decode body: %s", string(body))
 			}
 

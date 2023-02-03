@@ -149,7 +149,7 @@ func signupWrapper(t *testing.T, body string, code int, expected *jsonResp) func
 		}
 
 		got := &jsonResp{}
-		if err := decodeJsonResp(body, got); err != nil {
+		if err := decodeJson(body, got); err != nil {
 			t.Fatalf("fail to decode body %s, error: %v",
 				string(body), err)
 		}
@@ -217,7 +217,7 @@ func signinWrapper(t *testing.T, body string, code int, expected *jsonResp) func
 		if expected != nil {
 
 			got := &jsonResp{}
-			if err := decodeJsonResp(body, got); err != nil {
+			if err := decodeJson(body, got); err != nil {
 				t.Fatalf("fail to decode body %s, error: %v",
 					string(body), err)
 			}
