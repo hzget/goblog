@@ -108,16 +108,41 @@ func TestJSHandler(t *testing.T) {
 	})
 }
 
-func TestPressureViewJs(t *testing.T) {
-	// update cache before check to avoid frequent update
-	doATest(t, makePageHandler(viewjsHandler), encodeJson(viewReq{1}), &viewResp{})
+func TestPressureViewjs(t *testing.T) {
+	t.Run("AlreadyCached(Parallel=1000)", func(t *testing.T) {
+		testPressureViewjs(t, true, 1000)
+	})
+	t.Run("NotYetCached(Parallel=300)", func(t *testing.T) {
+		testPressureViewjs(t, false, 300)
+	})
+}
+
+func testPressureViewjs(t *testing.T, cached bool, N int) {
+	if cached {
+		doATest(t, makePageHandler(viewjsHandler), encodeJson(viewReq{1}), &viewResp{})
+	} else {
+		doATest(t, makePageHandler(savejsHandler), encodeJson(saveReq{1, "S", "nihao"}), &saveResp{})
+	}
 	var wg sync.WaitGroup
-	N := 1000
 	for i := 0; i < N; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			doATest(t, makePageHandler(viewjsHandler), encodeJson(viewReq{1}), &viewResp{})
+			req := encodeJson(viewReq{1})
+			res := &viewResp{}
+			err := doARequest(makePageHandler(viewjsHandler), "/", req, res)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !res.Success && !cached {
+				// there maybe a cache breakdown
+				// db is under pressure
+				want := "parallel dbaccess reach limit"
+				if !strings.Contains(res.Message, want) {
+					t.Fatalf("want [%s], got [%s]", want, res.Message)
+				}
+			}
+
 		}()
 	}
 	wg.Wait()

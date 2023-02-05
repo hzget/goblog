@@ -3,6 +3,8 @@ package blog
 import (
 	"context"
 	"errors"
+	"fmt"
+	"sync/atomic"
 )
 
 const Key_SQL_GetPostInfo = `SELECT post.*, ` +
@@ -18,6 +20,10 @@ const Key_SQL_GetPostInfo = `SELECT post.*, ` +
 
 const Key_SQL_loadPost = `select * from post where id = `
 
+var rdsUpdatingCount int64
+
+const rdsUpdatingLimit = 500
+
 func DBGetCache(key string, data interface{}) error {
 	if !dbcache {
 		return errors.New("not use Database Cache")
@@ -31,7 +37,7 @@ func DBUpdateCache(key string, data interface{}) error {
 		return errors.New("not use Database Cache")
 	}
 
-	return UpdateCache(key, data)
+	return UpdateCacheWithLimit(key, data)
 }
 
 func DBRemoveCache(key string) error {
@@ -57,8 +63,32 @@ func GetCache(key string, data interface{}) error {
 	return nil
 }
 
+func accessLimit(counter *int64, limit int64, name string, fn func() error) error {
+	count := atomic.AddInt64(counter, 1)
+	defer func() {
+		atomic.AddInt64(counter, -1)
+	}()
+
+	if count > limit {
+		err := fmt.Errorf("%s() reach limit %d", name, limit)
+		Debug(err.Error())
+		return err
+	}
+
+	return fn()
+}
+
+func UpdateCacheWithLimit(key string, data interface{}) error {
+	return accessLimit(
+		&rdsUpdatingCount, rdsUpdatingLimit,
+		"UpdateCache",
+		func() error {
+			return UpdateCache(key, data)
+		})
+}
+
 func UpdateCache(key string, data interface{}) error {
-	Debug("UpdateCache: key=[" + key + "]")
+	//	Debug("UpdateCache: key=[" + key + "]")
 	err := rdb.Set(context.Background(),
 		key,
 		encodeJson(data),

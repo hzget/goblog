@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"sync/atomic"
 	"time"
 )
 
@@ -22,6 +23,10 @@ const (
 	regexTitle_Neg = `^[ ]*$`
 	regexUsername  = `^[0-9a-zA-Z]{3,10}$`
 )
+
+var dbParallelN int64
+
+const dbParallelNLimit = 150
 
 type PostStatistics struct {
 	PostId int64    `json:"postid"`
@@ -42,6 +47,17 @@ func loadPost(id int64) (*Post, error) {
 	key := Key_SQL_loadPost + fmt.Sprintf("%d", id)
 	if err := DBGetCache(key, &p); err == nil {
 		return &p, nil
+	}
+
+	count := atomic.AddInt64(&dbParallelN, 1)
+	defer func() {
+		atomic.AddInt64(&dbParallelN, -1)
+	}()
+
+	if count > dbParallelNLimit {
+		s := fmt.Sprintf("parallel dbaccess reach limit %d,"+
+			" drop request", dbParallelNLimit)
+		return nil, &limitErr{nil, s}
 	}
 
 	q := Key_SQL_loadPost + `?`
@@ -155,6 +171,17 @@ func getPostInfo(id int64) (PostInfo, error) {
 	key := Key_SQL_GetPostInfo + fmt.Sprintf("%d", id)
 	if err := DBGetCache(key, &p); err == nil {
 		return p, nil
+	}
+
+	count := atomic.AddInt64(&dbParallelN, 1)
+	defer func() {
+		atomic.AddInt64(&dbParallelN, -1)
+	}()
+
+	if count > dbParallelNLimit {
+		s := fmt.Sprintf("parallel dbaccess reach limit %d,"+
+			" drop request", dbParallelNLimit)
+		return p, &limitErr{nil, s}
 	}
 
 	row := db.QueryRowContext(ctx, Key_SQL_GetPostInfo+"?", id)

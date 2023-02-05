@@ -92,9 +92,25 @@ func postlistHandler(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "postlist.html", data)
 }
 
+func handleErr(w http.ResponseWriter, r *http.Request, err error) {
+	switch err.(type) {
+	case *limitErr:
+		printAlert(w, err.Error(), http.StatusInternalServerError)
+	default:
+		printAlert(w, "the user is not allowed to view post", http.StatusBadRequest)
+
+	}
+}
+
 func viewHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 
-	canView := info.getPermisson()&PermView > 0
+	perm, err := info.getPermisson()
+	if err != nil {
+		handleErr(w, r, err)
+		return
+	}
+
+	canView := perm&PermView > 0
 	if !canView {
 		printAlert(w, "the user is not allowed to view post", http.StatusBadRequest)
 		return
@@ -117,7 +133,13 @@ func viewHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 
 func editHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 
-	canEdit := info.getPermisson()&PermEdit > 0
+	perm, err := info.getPermisson()
+	if err != nil {
+		handleErr(w, r, err)
+		return
+	}
+
+	canEdit := perm&PermEdit > 0
 	if !canEdit {
 		printAlert(w, "the user is not allowed to edit post", http.StatusBadRequest)
 		return
@@ -133,7 +155,13 @@ func editHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 
 func saveHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 
-	canEdit := info.getPermisson()&PermEdit > 0
+	perm, err := info.getPermisson()
+	if err != nil {
+		handleErr(w, r, err)
+		return
+	}
+
+	canEdit := perm&PermEdit > 0
 	if !canEdit {
 		printAlert(w, "the user is not allowed to edit and save post", http.StatusBadRequest)
 		return
@@ -168,7 +196,12 @@ func viewjsHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) *appE
 	}
 
 	info.Id = req.Id
-	canView := info.getPermisson()&PermView > 0
+	perm, err := info.getPermisson()
+	if err != nil {
+		return &appError{err, http.StatusBadRequest}
+	}
+
+	canView := perm&PermView > 0
 	if !canView {
 		return &appError{errors.New("the user is not allowed to view post"),
 			http.StatusBadRequest}
@@ -199,7 +232,12 @@ func savejsHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) *appE
 	}
 
 	info.Id = req.Id
-	canEdit := info.getPermisson()&PermEdit > 0
+	perm, err := info.getPermisson()
+	if err != nil {
+		return &appError{err, http.StatusBadRequest}
+	}
+
+	canEdit := perm&PermEdit > 0
 	if !canEdit {
 		return &appError{errors.New("the user is not allowed to edit and save post"),
 			http.StatusBadRequest}
@@ -247,7 +285,13 @@ func encodeJsonViewResp(p PostInfo) string {
 
 func deleteHandler(w http.ResponseWriter, r *http.Request, info *PageInfo) {
 
-	canDel := info.getPermisson()&PermDelete > 0
+	perm, err := info.getPermisson()
+	if err != nil {
+		handleErr(w, r, err)
+		return
+	}
+
+	canDel := perm&PermDelete > 0
 	if !canDel {
 		printAlert(w, "the user is not allowed to delete post", http.StatusBadRequest)
 		return
@@ -330,34 +374,34 @@ func makePageHandler(fn func(http.ResponseWriter, *http.Request, *PageInfo) *app
  * edit: (id exists and user == author) or ( id == 0 and user is not superadmin)
  * del : id exists and is superadmin
  */
-func (info *PageInfo) getPermisson() int {
+func (info *PageInfo) getPermisson() (int, error) {
 
 	if info.Id < 0 {
-		return PermNone
+		return PermNone, nil
 	}
 
 	// create a post
 	if info.Id == 0 {
 		if info.Username == "superadmin" {
-			return PermNone
+			return PermNone, nil
 		}
-		return PermEdit
+		return PermEdit, nil
 	}
 
 	post, err := loadPost(info.Id)
 	if err != nil {
-		return PermNone
+		return PermNone, err
 	}
 
 	if info.Username == "superadmin" {
-		return PermDelete | PermView
+		return PermDelete | PermView, nil
 	}
 
 	if info.Username == post.Author {
-		return PermEdit | PermView
+		return PermEdit | PermView, nil
 	}
 
-	return PermView
+	return PermView, nil
 }
 
 func getViewData(info *PageInfo) (interface{}, error) {
@@ -367,7 +411,10 @@ func getViewData(info *PageInfo) (interface{}, error) {
 		return nil, err
 	}
 
-	perm := info.getPermisson()
+	perm, err := info.getPermisson()
+	if err != nil {
+		return nil, err
+	}
 
 	pi.Body = getHTMLEscapeString(pi.Body)
 
