@@ -131,13 +131,9 @@ func saveranksHandler(w http.ResponseWriter, r *http.Request) {
 
 func makeAdminHandler(fn func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		username, status := ValidateSession(w, r)
-		switch status {
-		case SessionUnauthorized:
-			printAlert(w, "please log in first", http.StatusUnauthorized)
-			return
-		case SessionInternalError:
-			printAlert(w, "internal error", http.StatusInternalServerError)
+		username, err := ValidateSession(w, r)
+		if err != nil {
+			printAlert(w, err.Error(), err.Code())
 			return
 		}
 

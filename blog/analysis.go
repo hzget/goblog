@@ -26,13 +26,9 @@ type AnalyzeReq struct {
 }
 
 func analysisHandler(w http.ResponseWriter, r *http.Request) {
-	username, status := ValidateSession(w, r)
-	switch status {
-	case SessionUnauthorized:
-		printAlert(w, "please log in first", http.StatusUnauthorized)
-		return
-	case SessionInternalError:
-		printAlert(w, "internal error", http.StatusInternalServerError)
+	username, err1 := ValidateSession(w, r)
+	if err1 != nil {
+		printAlert(w, err1.Error(), err1.Code())
 		return
 	}
 
@@ -60,15 +56,9 @@ func analysisHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func analyzeHandler(w http.ResponseWriter, r *http.Request) {
-	user, status := ValidateSession(w, r)
-	switch status {
-	case SessionUnauthorized:
-		http.Error(w, encodeJsonResp(false, "please log in first"),
-			http.StatusUnauthorized)
-		return
-	case SessionInternalError:
-		http.Error(w, encodeJsonResp(false, "internal error"),
-			http.StatusInternalServerError)
+	user, err1 := ValidateSession(w, r)
+	if err1 != nil {
+		http.Error(w, encodeJsonResp(false, err1.Error()), err1.Code())
 		return
 	}
 

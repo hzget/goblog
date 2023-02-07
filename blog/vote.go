@@ -14,13 +14,9 @@ type VoteStar struct {
 }
 
 func voteHandler(w http.ResponseWriter, r *http.Request) {
-	_, status := ValidateSession(w, r)
-	switch status {
-	case SessionUnauthorized:
-		http.Error(w, "please log in first", http.StatusUnauthorized)
-		return
-	case SessionInternalError:
-		http.Error(w, "internal error", http.StatusInternalServerError)
+	_, err1 := ValidateSession(w, r)
+	if err1 != nil {
+		http.Error(w, encodeJsonResp(false, err1.Error()), err1.Code())
 		return
 	}
 

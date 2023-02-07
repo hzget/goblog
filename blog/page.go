@@ -323,13 +323,9 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request, *PageInfo)) http.Ha
 		}
 		id, err := strconv.Atoi(title)
 
-		username, status := ValidateSession(w, r)
-		switch status {
-		case SessionUnauthorized:
-			printAlert(w, "please log in first", http.StatusUnauthorized)
-			return
-		case SessionInternalError:
-			printAlert(w, "internal error", http.StatusInternalServerError)
+		username, err2 := ValidateSession(w, r)
+		if err2 != nil {
+			printAlert(w, err2.Error(), err2.Code())
 			return
 		}
 
@@ -345,13 +341,9 @@ func makePageHandler(fn func(http.ResponseWriter, *http.Request, *PageInfo) *app
 		var e *appError
 		var info *PageInfo
 
-		username, status := ValidateSession(w, r)
-		switch status {
-		case SessionUnauthorized:
-			e = &appError{errors.New("please log in first"), http.StatusUnauthorized}
-			goto Err
-		case SessionInternalError:
-			e = &appError{errors.New("internal error"), http.StatusInternalServerError}
+		username, err := ValidateSession(w, r)
+		if err != nil {
+			e = &appError{err, err.Code()}
 			goto Err
 		}
 

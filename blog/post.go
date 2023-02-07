@@ -65,7 +65,7 @@ func loadPost(id int64) (*Post, error) {
 	err := row.Scan(&p.Id, &p.Title, &p.Author, &p.Date, &p.Modified, &p.Body)
 
 	if err != nil {
-		Info("logPost:" + err.Error())
+		Info("loadPost:" + err.Error())
 		return nil, err
 	}
 

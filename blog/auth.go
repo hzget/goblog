@@ -30,7 +30,8 @@ type Credentials struct {
 }
 
 // remaining:
-//   add contraint: validate pwd regexp
+//
+//	add contraint: validate pwd regexp
 func (creds *Credentials) Validate() (bool, error) {
 	return regexp.MatchString(`^[0-9a-zA-Z]{3,10}$`, creds.Username)
 }
@@ -195,41 +196,42 @@ func signinHandler(w http.ResponseWriter, r *http.Request, creds *Credentials) *
 	return nil
 }
 
-func ValidateSession(w http.ResponseWriter, r *http.Request) (string, SessionStatus) {
+func ValidateSession(w http.ResponseWriter, r *http.Request) (string, *respErr) {
 	c, err := r.Cookie("session_token")
 	switch {
 	case err == http.ErrNoCookie:
-		return "", SessionUnauthorized
+		return "", &respErr{err, http.StatusUnauthorized}
 	case err != nil:
 		fmt.Printf("internal error: %v\n", err)
-		return "", SessionInternalError
+		return "", &respErr{err, http.StatusInternalServerError}
 	}
 
 	cuser, err := r.Cookie("user")
 	switch {
 	case err == http.ErrNoCookie:
-		return "", SessionUnauthorized
+		return "", &respErr{err, http.StatusUnauthorized}
 	case err != nil:
 		fmt.Printf("internal error: %v\n", err)
-		return "", SessionInternalError
+		return "", &respErr{err, http.StatusInternalServerError}
 	}
 
 	token, err := checkKey(cuser.Value)
 	switch {
 	case err == redis.Nil:
-		return "", SessionUnauthorized
+		return "", &respErr{err, http.StatusUnauthorized}
 	case err != nil:
 		fmt.Printf("internal error: %v\n", err)
-		return "", SessionInternalError
+		return "", &respErr{err, http.StatusInternalServerError}
 	}
 
 	if token != c.Value {
-		fmt.Printf("error: %v token unmatched %v, %v\n", cuser.Value, c.Value, token)
+		err := fmt.Errorf("error: %v token unmatched %v, %v\n", cuser.Value, c.Value, token)
+		fmt.Printf("internal error: %v\n", err)
 		clearCookies(w)
-		return "", SessionUnauthorized
+		return "", &respErr{err, http.StatusUnauthorized}
 	}
 
-	return cuser.Value, SessionAuthorized
+	return cuser.Value, nil
 }
 
 func checkKey(name string) (string, error) {
