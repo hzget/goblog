@@ -225,8 +225,8 @@ func ValidateSession(w http.ResponseWriter, r *http.Request) (string, *respErr) 
 	}
 
 	if token != c.Value {
-		err := fmt.Errorf("error: %v token unmatched %v, %v\n", cuser.Value, c.Value, token)
-		fmt.Printf("internal error: %v\n", err)
+		err := fmt.Errorf("error: %v token unmatched %v != %v\n", cuser.Value, c.Value, token)
+		Info(err.Error())
 		clearCookies(w)
 		return "", &respErr{err, http.StatusUnauthorized}
 	}

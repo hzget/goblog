@@ -1,8 +1,11 @@
 package blog
 
 import (
+	"errors"
 	"net/http"
 )
+
+var ErrHttpUnAuthorized = errors.New("StatusUnauthorized")
 
 type limitErr struct {
 	err error
@@ -32,11 +35,15 @@ var respErrorMap = map[int]string{
 }
 
 func (e *respErr) Error() string {
+	var inner string
+	if e.err != nil {
+		inner = e.err.Error()
+	}
 	s, ok := respErrorMap[e.code]
 	if ok {
-		return s + ": " + e.err.Error()
+		return s + ": " + inner
 	}
-	return e.err.Error()
+	return inner
 }
 
 func (e *respErr) Unwrap() error {

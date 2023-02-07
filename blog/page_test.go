@@ -99,6 +99,36 @@ func signinAndSaveCookie() error {
 
 }
 
+func TestViewjsUnAuthorized(t *testing.T) {
+	cases := []struct {
+		name, c string
+	}{
+		{"nouser", ""},
+		{"notoken", "user=admin"},
+		{"wrongtoken", "session_token=12345; user=admin"},
+		{"nocache", "session_token=12345; user=abcde"},
+	}
+
+	req := encodeJson(viewReq{1})
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			res := &viewResp{}
+			err := doARequestWithDetail(makePageHandler(viewjsHandler), "/", req, tc.c, res)
+			if err != ErrHttpUnAuthorized {
+				t.Fatal(err)
+			}
+			if res.Success != false {
+				t.Fatalf("response status want %v, got %v", false, res.Success)
+			}
+
+			want := "please log in first"
+			if !strings.Contains(res.Message, want) {
+				t.Fatalf("want [%s], got [%s]", want, res.Message)
+			}
+		})
+	}
+}
+
 func TestJSHandler(t *testing.T) {
 	t.Run("Viewjs", func(t *testing.T) {
 		doATest(t, makePageHandler(viewjsHandler), encodeJson(viewReq{1}), &viewResp{})
@@ -149,6 +179,10 @@ func testPressureViewjs(t *testing.T, cached bool, N int) {
 }
 
 func doARequest(handler http.HandlerFunc, url, bodyJson string, data interface{}) error {
+	return doARequestWithDetail(handler, url, bodyJson, cookie, data)
+}
+
+func doARequestWithDetail(handler http.HandlerFunc, url, bodyJson, cookie string, data interface{}) error {
 
 	// create req
 	body := strings.NewReader(bodyJson)
@@ -162,11 +196,6 @@ func doARequest(handler http.HandlerFunc, url, bodyJson string, data interface{}
 	// get response
 	resp := w.Result()
 
-	// check auth status
-	if resp.StatusCode == http.StatusUnauthorized {
-		return errors.New("StatusUnauthorized")
-	}
-
 	// read resp
 	bodyText, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -176,6 +205,11 @@ func doARequest(handler http.HandlerFunc, url, bodyJson string, data interface{}
 	// decode resp
 	if err := decodeJson(bodyText, data); err != nil {
 		return err
+	}
+
+	// check auth status
+	if resp.StatusCode == http.StatusUnauthorized {
+		return ErrHttpUnAuthorized
 	}
 
 	return nil
