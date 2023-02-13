@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestCredentialsValidate(t *testing.T) {
@@ -286,5 +287,42 @@ func signinWrapper(t *testing.T, body string, code int, expected *jsonResp) func
 		}
 
 		defer removeKey(user)
+	}
+}
+
+func TestClearCookies(t *testing.T) {
+	w := httptest.NewRecorder()
+	clearCookies(w)
+	resp := w.Result()
+	cookies := resp.Cookies()
+	var token, user bool
+	for _, c := range cookies {
+		if c.Name == "session_token" {
+			validateCookie(t, c, &http.Cookie{Name: c.Name, Path: "/", MaxAge: -1})
+			token = true
+		} else if c.Name == "user" {
+			validateCookie(t, c, &http.Cookie{Name: c.Name, Path: "/", MaxAge: -1})
+			user = true
+		}
+	}
+	if !token || !user {
+		t.Fatalf("response cookie not contain \"session_token\" or \"user\""+
+			".\n---resp---\n%v\n---end---\n", resp)
+	}
+}
+
+func validateCookie(t *testing.T, c, expected *http.Cookie) {
+	if c.Value != expected.Value {
+		t.Fatalf("cookie %q expect Value %q, but got %q", c.Name, expected.Value, c.Value)
+	}
+	if c.Path != expected.Path {
+		t.Fatalf("cookie %q expect Path %q, but got %q", c.Name, expected.Path, c.Path)
+	}
+	expiretime := time.Now().Add(-7 * 24 * time.Hour)
+	if expiretime.Before(c.Expires) {
+		t.Fatalf("cookie %q expect Expires %v, but got %v", c.Name, expiretime, c.Expires)
+	}
+	if c.MaxAge != expected.MaxAge {
+		t.Fatalf("cookie %q expect MaxAge %d, but got %d", c.Name, expected.MaxAge, c.MaxAge)
 	}
 }
