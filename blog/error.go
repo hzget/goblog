@@ -7,6 +7,8 @@ import (
 
 var ErrHttpUnAuthorized = errors.New("StatusUnauthorized")
 
+var ErrCacheTokenUnmatch = errors.New("Cache token unmatch")
+
 type limitErr struct {
 	err error
 	msg string

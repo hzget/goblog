@@ -1,7 +1,9 @@
 package blog
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"github.com/go-redis/redis/v8"
 	"io"
 	"net/http"
@@ -287,6 +289,39 @@ func signinWrapper(t *testing.T, body string, code int, expected *jsonResp) func
 		}
 
 		defer removeKey(user)
+	}
+}
+
+func TestValidateSession(t *testing.T) {
+
+	cases := []struct {
+		name string
+		c    string
+		user string
+		err  error
+	}{
+		{"AlreadyLogin", cookie, "admin", (*respErr)(nil)},
+		{"LackOfToken", "", "", http.ErrNoCookie},
+		{"LackOfUser", "session_token=5", "", http.ErrNoCookie},
+		{"NoSuchUser", "session_token=5; user=whoareyou", "", redis.Nil},
+		{"UnmatchToken", "session_token=5; user=admin", "", ErrCacheTokenUnmatch},
+	}
+
+	w := httptest.NewRecorder()
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			r := httptest.NewRequest("POST", "/", new(bytes.Buffer))
+			r.Header.Set("Cookie", tc.c)
+
+			user, err := ValidateSession(w, r)
+			if !errors.Is(err, tc.err) {
+				t.Fatalf("expect error %v but got %v", tc.err, err)
+			}
+			if user != tc.user {
+				t.Fatalf("expect user %q but got %q", tc.user, user)
+			}
+		})
 	}
 }
 

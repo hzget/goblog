@@ -228,7 +228,7 @@ func ValidateSession(w http.ResponseWriter, r *http.Request) (string, *respErr) 
 		err := fmt.Errorf("error: %v token unmatched %v != %v\n", cuser.Value, c.Value, token)
 		Info(err.Error())
 		clearCookies(w)
-		return "", &respErr{err, http.StatusUnauthorized}
+		return "", &respErr{ErrCacheTokenUnmatch, http.StatusUnauthorized}
 	}
 
 	return cuser.Value, nil
