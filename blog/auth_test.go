@@ -292,6 +292,85 @@ func signinWrapper(t *testing.T, body string, code int, expected *jsonResp) func
 	}
 }
 
+func signin(t *testing.T, username, password string) {
+	body := `{"username":"` + username + `", "password":"` + password + `"}`
+	req := httptest.NewRequest("", "/signin", bytes.NewBufferString(body))
+	w := httptest.NewRecorder()
+	makeAuthHandler(signinHandler)(w, req)
+	if resp := w.Result(); resp.StatusCode != http.StatusOK {
+		t.Fatalf("signin failed, status: %d", resp.StatusCode)
+	}
+}
+
+func doALogout(mycookie string) *http.Response {
+	req := httptest.NewRequest("", "/logout", new(bytes.Buffer))
+	req.Header.Set("Cookie", mycookie)
+	w := httptest.NewRecorder()
+	logoutHandler(w, req)
+	return w.Result()
+}
+
+func verifyLogoutResp(t *testing.T, resp *http.Response, code int) {
+	if resp.StatusCode != code {
+		t.Fatalf("expect http code %d, but got %d",
+			code, resp.StatusCode)
+	}
+
+	cookies := resp.Cookies()
+	verifyClearCookies(t, cookies)
+}
+
+func TestLogoutHandler(t *testing.T) {
+
+	// signup a new user
+	creds := Credentials{"Lucy", "123"}
+	if err := creds.save(); err != nil {
+		t.Fatal(err)
+	}
+	defer creds.remove()
+
+	// signin
+	signin(t, "Lucy", "123")
+	token, err := checkKey("Lucy")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer removeKey("Lucy")
+
+	var resp *http.Response
+
+	t.Run("Unauthorized", func(t *testing.T) {
+		resp = doALogout("session_token=2" + token + "; user=Lucy")
+		verifyLogoutResp(t, resp, http.StatusUnauthorized)
+		if _, err := checkKey("Lucy"); err != nil {
+			t.Fatalf("expect nil, but got %v", err)
+		}
+	})
+
+	t.Run("Unauthorized", func(t *testing.T) {
+		resp = doALogout("session_token=" + token + "; user=Lucys")
+		verifyLogoutResp(t, resp, http.StatusUnauthorized)
+	})
+
+	t.Run("Unauthorized", func(t *testing.T) {
+		resp = doALogout("session_token=" + token + ";")
+		verifyLogoutResp(t, resp, http.StatusUnauthorized)
+	})
+
+	t.Run("StatusOK", func(t *testing.T) {
+		resp = doALogout("session_token=" + token + "; user=Lucy")
+		verifyLogoutResp(t, resp, http.StatusOK)
+		if _, err := checkKey("Lucy"); err != redis.Nil {
+			t.Fatalf("expect redis.Nil, but got %v", err)
+		}
+	})
+
+	t.Run("Unauthorized", func(t *testing.T) {
+		resp = doALogout("session_token=" + token + "; user=Lucy")
+		verifyLogoutResp(t, resp, http.StatusUnauthorized)
+	})
+}
+
 func TestValidateSession(t *testing.T) {
 
 	cases := []struct {
@@ -330,6 +409,10 @@ func TestClearCookies(t *testing.T) {
 	clearCookies(w)
 	resp := w.Result()
 	cookies := resp.Cookies()
+	verifyClearCookies(t, cookies)
+}
+
+func verifyClearCookies(t *testing.T, cookies []*http.Cookie) {
 	var token, user bool
 	for _, c := range cookies {
 		if c.Name == "session_token" {
@@ -342,7 +425,7 @@ func TestClearCookies(t *testing.T) {
 	}
 	if !token || !user {
 		t.Fatalf("response cookie not contain \"session_token\" or \"user\""+
-			".\n---resp---\n%v\n---end---\n", resp)
+			".\n---cookies---\n%v\n---end---\n", cookies)
 	}
 }
 

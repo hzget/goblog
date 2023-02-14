@@ -261,35 +261,24 @@ func removeKey(name string) error {
 
 func logoutHandler(w http.ResponseWriter, r *http.Request) {
 
-	var e *appError
-	c, err := r.Cookie("user")
-	switch {
-	case err == http.ErrNoCookie:
-		clearCookies(w)
-		fmt.Fprintf(w, encodeJsonResp(true, "no cookie item, but will clear via set-cookie"))
-		return
-	case err != nil:
-		e = &appError{err, http.StatusInternalServerError}
-		goto Err
-	}
-
-	err = removeKey(c.Value)
-	if err != nil {
-		e = &appError{fmt.Errorf("%v: fail to del user %v", err, c.Value),
-			http.StatusInternalServerError}
-		goto Err
-	}
-
+	user, err := ValidateSession(w, r)
 	clearCookies(w)
-
-	fmt.Fprintf(w, encodeJsonResp(true, "logout success"))
-	return
-
-Err:
-	if e.Code == http.StatusInternalServerError {
-		fmt.Println(e.Error)
+	if err != nil {
+		RespondError(w, err)
+		return
 	}
-	http.Error(w, encodeJsonResp(false, e.Error.Error()), e.Code)
+
+	err = removeKey(user)
+	if err == nil {
+		fmt.Fprintf(w, encodeJsonResp(true, "logout success"))
+		return
+	}
+
+	err = fmt.Errorf("%v: fail to del user %v", err, user)
+
+	fmt.Println(err)
+	http.Error(w, encodeJsonResp(false, err.Error()),
+		http.StatusInternalServerError)
 }
 
 func clearCookies(w http.ResponseWriter) {
