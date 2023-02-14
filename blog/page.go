@@ -323,9 +323,9 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request, *PageInfo)) http.Ha
 		}
 		id, err := strconv.Atoi(title)
 
-		username, err2 := ValidateSession(w, r)
-		if err2 != nil {
-			printAlert(w, err2.Error(), err2.Code())
+		username, err := ValidateSession(w, r)
+		if err != nil {
+			RespondAlert(w, err)
 			return
 		}
 
@@ -343,8 +343,8 @@ func makePageHandler(fn func(http.ResponseWriter, *http.Request, *PageInfo) *app
 
 		username, err := ValidateSession(w, r)
 		if err != nil {
-			e = &appError{err, err.Code()}
-			goto Err
+			RespondError(w, err)
+			return
 		}
 
 		info = &PageInfo{Username: username}
@@ -353,7 +353,6 @@ func makePageHandler(fn func(http.ResponseWriter, *http.Request, *PageInfo) *app
 			return
 		}
 
-	Err:
 		if e.Code == http.StatusInternalServerError {
 			fmt.Println(e.Error)
 		}

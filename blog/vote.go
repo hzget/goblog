@@ -14,9 +14,8 @@ type VoteStar struct {
 }
 
 func voteHandler(w http.ResponseWriter, r *http.Request) {
-	_, err1 := ValidateSession(w, r)
-	if err1 != nil {
-		http.Error(w, encodeJsonResp(false, err1.Error()), err1.Code())
+	if _, err := ValidateSession(w, r); err != nil {
+		RespondError(w, err)
 		return
 	}
 

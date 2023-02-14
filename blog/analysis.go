@@ -26,9 +26,9 @@ type AnalyzeReq struct {
 }
 
 func analysisHandler(w http.ResponseWriter, r *http.Request) {
-	username, err1 := ValidateSession(w, r)
-	if err1 != nil {
-		printAlert(w, err1.Error(), err1.Code())
+	username, err := ValidateSession(w, r)
+	if err != nil {
+		RespondAlert(w, err)
 		return
 	}
 
@@ -56,9 +56,9 @@ func analysisHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func analyzeHandler(w http.ResponseWriter, r *http.Request) {
-	user, err1 := ValidateSession(w, r)
-	if err1 != nil {
-		http.Error(w, encodeJsonResp(false, err1.Error()), err1.Code())
+	user, err := ValidateSession(w, r)
+	if err != nil {
+		RespondError(w, err)
 		return
 	}
 
@@ -74,7 +74,6 @@ func analyzeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var result string
-	var err error
 	switch req.How {
 	case ByAuthor:
 		analyzeAuthorHandler(w, r, user, req)

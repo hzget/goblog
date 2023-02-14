@@ -196,7 +196,7 @@ func signinHandler(w http.ResponseWriter, r *http.Request, creds *Credentials) *
 	return nil
 }
 
-func ValidateSession(w http.ResponseWriter, r *http.Request) (string, *respErr) {
+func ValidateSession(w http.ResponseWriter, r *http.Request) (string, error) {
 	c, err := r.Cookie("session_token")
 	switch {
 	case err == http.ErrNoCookie:
@@ -232,6 +232,23 @@ func ValidateSession(w http.ResponseWriter, r *http.Request) (string, *respErr) 
 	}
 
 	return cuser.Value, nil
+}
+
+func RespondError(w http.ResponseWriter, err error) {
+	if err, ok := err.(*respErr); ok {
+		http.Error(w, encodeJsonResp(false, err.Error()), err.Code())
+		return
+	}
+	http.Error(w, encodeJsonResp(false, err.Error()),
+		http.StatusInternalServerError)
+}
+
+func RespondAlert(w http.ResponseWriter, err error) {
+	if err, ok := err.(*respErr); ok {
+		printAlert(w, err.Error(), err.Code())
+		return
+	}
+	printAlert(w, err.Error(), http.StatusInternalServerError)
 }
 
 func checkKey(name string) (string, error) {

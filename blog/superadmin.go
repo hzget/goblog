@@ -133,7 +133,7 @@ func makeAdminHandler(fn func(http.ResponseWriter, *http.Request)) http.HandlerF
 	return func(w http.ResponseWriter, r *http.Request) {
 		username, err := ValidateSession(w, r)
 		if err != nil {
-			printAlert(w, err.Error(), err.Code())
+			RespondAlert(w, err)
 			return
 		}
 

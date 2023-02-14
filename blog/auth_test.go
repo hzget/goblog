@@ -300,7 +300,7 @@ func TestValidateSession(t *testing.T) {
 		user string
 		err  error
 	}{
-		{"AlreadyLogin", cookie, "admin", (*respErr)(nil)},
+		{"AlreadyLogin", cookie, "admin", nil},
 		{"LackOfToken", "", "", http.ErrNoCookie},
 		{"LackOfUser", "session_token=5", "", http.ErrNoCookie},
 		{"NoSuchUser", "session_token=5; user=whoareyou", "", redis.Nil},
