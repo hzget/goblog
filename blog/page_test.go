@@ -51,7 +51,7 @@ func doASignin(url, bodyJson string) *http.Response {
 
 	// mock a signin req
 	w := httptest.NewRecorder()
-	makeAuthHandler(signinHandler)(w, req)
+	signinHandler(w, req)
 
 	// get response
 	return w.Result()

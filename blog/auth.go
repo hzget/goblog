@@ -121,28 +121,6 @@ func validateCredentials(w http.ResponseWriter, r *http.Request) (*Credentials, 
 
 }
 
-func makeAuthHandler(fn func(http.ResponseWriter, *http.Request, *Credentials) *appError) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		creds, err := validateCredentials(w, r)
-		if err != nil {
-			RespondError(w, err)
-			return
-		}
-
-		e := fn(w, r, creds)
-
-		if e == nil {
-			return
-		}
-
-		if e.Code == http.StatusInternalServerError {
-			fmt.Println(e.Error)
-		}
-		http.Error(w, encodeJsonResp(false, e.Error.Error()), e.Code)
-	}
-}
-
 func signupHandler(w http.ResponseWriter, r *http.Request) {
 
 	creds, err := validateCredentials(w, r)
@@ -175,27 +153,43 @@ func signupHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, encodeJsonResp(true, "signup success"))
 }
 
-func signinHandler(w http.ResponseWriter, r *http.Request, creds *Credentials) *appError {
+func signinHandler(w http.ResponseWriter, r *http.Request) {
+
+	creds, err := validateCredentials(w, r)
+	if err != nil {
+		RespondError(w, err)
+		return
+	}
 
 	hash, err := getPassword(creds.Username)
 	switch {
 	case err == sql.ErrNoRows:
-		return &appError{fmt.Errorf("no such user %v", creds.Username), http.StatusUnauthorized}
+		msg := fmt.Sprintf("no such user %v", creds.Username)
+		http.Error(w, encodeJsonResp(false, msg), http.StatusUnauthorized)
+		return
 	case err != nil:
-		return &appError{fmt.Errorf("fail to get password for user %v, %v", creds.Username, err),
-			http.StatusInternalServerError}
+		msg := fmt.Sprintf("fail to get password for user %v, %v",
+			creds.Username, err)
+		http.Error(w, encodeJsonResp(false, msg),
+			http.StatusInternalServerError)
+		return
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(hash), []byte(creds.Password))
 	if err != nil {
-		return &appError{fmt.Errorf("failed to validate password"), http.StatusUnauthorized}
+		msg := fmt.Sprintf("failed to validate password: %v", err)
+		http.Error(w, encodeJsonResp(false, msg), http.StatusUnauthorized)
+		return
 	}
 
 	token := uuid.NewString()
 	err = rdb.Set(context.Background(), creds.Username, token, sessionTimeout).Err()
 	if err != nil {
-		return &appError{fmt.Errorf("fail to set token for user %v", creds.Username),
-			http.StatusInternalServerError}
+		msg := fmt.Sprintf("fail to set token for user %q, %v",
+			creds.Username, err)
+		http.Error(w, encodeJsonResp(false, msg),
+			http.StatusInternalServerError)
+		return
 	}
 
 	http.SetCookie(w, &http.Cookie{
@@ -212,7 +206,6 @@ func signinHandler(w http.ResponseWriter, r *http.Request, creds *Credentials) *
 	})
 
 	fmt.Fprintf(w, encodeJsonResp(true, "signin success"))
-	return nil
 }
 
 func ValidateSession(w http.ResponseWriter, r *http.Request) (string, error) {

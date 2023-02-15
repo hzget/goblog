@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -166,7 +165,7 @@ func testsignup(t *testing.T, body string, code int, expected *jsonResp) func(*t
 	}
 }
 
-func TestSigninHandlerWrapper(t *testing.T) {
+func TestSigninHandler(t *testing.T) {
 
 	// signup a new user
 	creds := Credentials{"Lucy", "123"}
@@ -178,26 +177,26 @@ func TestSigninHandlerWrapper(t *testing.T) {
 	body := `{"username":"Lucy", "password":"123"}`
 	code := http.StatusOK
 	expected := jsonResp{true, "signin success"}
-	t.Run("Success", signinWrapper(t, body, code, &expected))
+	t.Run("Success", testSignin(t, body, code, &expected))
 
 	body = `{"username":"Lucya", "password":"123"}`
 	code = http.StatusUnauthorized
 	expected = jsonResp{false, "no such user Lucya"}
-	t.Run("UserNotExist", signinWrapper(t, body, code, &expected))
+	t.Run("UserNotExist", testSignin(t, body, code, &expected))
 
 	body = `{"username":"Lucy", "password":"1234"}`
 	code = http.StatusUnauthorized
 	expected = jsonResp{false, "failed to validate password"}
-	t.Run("PasswordFailed", signinWrapper(t, body, code, &expected))
+	t.Run("PasswordFailed", testSignin(t, body, code, &expected))
 
 }
 
 // if expected is nil, do not verify expected msg
-func signinWrapper(t *testing.T, body string, code int, expected *jsonResp) func(*testing.T) {
+func testSignin(t *testing.T, body string, code int, expected *jsonResp) func(*testing.T) {
 
 	return func(t *testing.T) {
 
-		handler := makeAuthHandler(signinHandler)
+		handler := signinHandler
 
 		creds := Credentials{}
 		decoder := json.NewDecoder(strings.NewReader(body))
@@ -227,9 +226,14 @@ func signinWrapper(t *testing.T, body string, code int, expected *jsonResp) func
 				t.Fatalf("fail to decode body %s, error: %v",
 					string(body), err)
 			}
-			if !reflect.DeepEqual(got, expected) {
-				t.Fatalf("body is unexpected. want %v, but got %v",
-					encodeJson(expected), string(body))
+
+			if got.Success != expected.Success {
+				t.Fatalf("status: want %v, got %v",
+					expected.Success, got.Success)
+			}
+			if !strings.Contains(got.Message, expected.Message) {
+				t.Fatalf("want [%q], got [%q]",
+					expected.Message, got.Message)
 			}
 
 		}
@@ -299,7 +303,7 @@ func signin(t *testing.T, username, password string) {
 	body := `{"username":"` + username + `", "password":"` + password + `"}`
 	req := httptest.NewRequest("", "/signin", bytes.NewBufferString(body))
 	w := httptest.NewRecorder()
-	makeAuthHandler(signinHandler)(w, req)
+	signinHandler(w, req)
 	if resp := w.Result(); resp.StatusCode != http.StatusOK {
 		t.Fatalf("signin failed, status: %d", resp.StatusCode)
 	}

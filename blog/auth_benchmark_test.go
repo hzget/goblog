@@ -15,7 +15,7 @@ func BenchmarkSigninWrapper(b *testing.B) {
 	defer creds.remove()
 	defer removeKey(creds.Username)
 
-	handler := makeAuthHandler(signinHandler)
+	handler := signinHandler
 	w := httptest.NewRecorder()
 	body := `{"username":"Lucy", "password":"123"}`
 
