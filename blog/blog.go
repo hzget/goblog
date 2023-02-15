@@ -72,7 +72,7 @@ func startHttpServer(srv *http.Server, c chan<- struct{}) {
 	http.HandleFunc(sitePrefix+"/viewjs", makePageHandler(viewjsHandler))
 	http.HandleFunc(sitePrefix+"/savejs", makePageHandler(savejsHandler))
 
-	http.HandleFunc(sitePrefix+"/signup", makeAuthHandler(signupHandler))
+	http.HandleFunc(sitePrefix+"/signup", signupHandler)
 	http.HandleFunc(sitePrefix+"/signin", makeAuthHandler(signinHandler))
 	http.HandleFunc(sitePrefix+"/logout", logoutHandler)
 

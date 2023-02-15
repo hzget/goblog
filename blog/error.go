@@ -8,6 +8,7 @@ import (
 var ErrHttpUnAuthorized = errors.New("StatusUnauthorized")
 
 var ErrCacheTokenUnmatch = errors.New("Cache token unmatch")
+var ErrCredentialFailed = errors.New("fail to validate credential")
 
 type limitErr struct {
 	err error
@@ -25,6 +26,15 @@ func (e *limitErr) Unwrap() error {
 type respErr struct {
 	err  error
 	code int
+	msg  string
+}
+
+func NewRespErr(err error, code int, msg ...string) error {
+	r := &respErr{err: err, code: code}
+	for _, v := range msg {
+		r.msg += v
+	}
+	return r
 }
 
 func (e *respErr) Code() int {
@@ -41,9 +51,12 @@ func (e *respErr) Error() string {
 	if e.err != nil {
 		inner = e.err.Error()
 	}
+	if e.msg != "" {
+		return e.msg + " " + inner
+	}
 	s, ok := respErrorMap[e.code]
 	if ok {
-		return s + ": " + inner
+		return s + " " + inner
 	}
 	return inner
 }

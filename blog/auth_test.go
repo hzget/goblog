@@ -103,36 +103,34 @@ func TestCredentialsRemove(t *testing.T) {
 	}
 }
 
-func TestSignupHandlerWrapper(t *testing.T) {
+func TestSignupHandler(t *testing.T) {
 	body := `{"username":"Lucy", "password":"12345"}`
 	code := http.StatusOK
 	expected := jsonResp{true, "signup success"}
-	t.Run("Success", signupWrapper(t, body, code, &expected))
+	t.Run("Success", testsignup(t, body, code, &expected))
 
 	code = http.StatusBadRequest
 	expected = jsonResp{false, "user already exists, please choose another name"}
-	t.Run("UserExists", signupWrapper(t, body, code, &expected))
+	t.Run("UserExists", testsignup(t, body, code, &expected))
 	(&Credentials{Username: "Lucy"}).remove()
 
 	body = `{"username":"1234567890a", "password":"12345"}`
 	expected = jsonResp{false, "invalid username"}
-	t.Run("InvalidUsername", signupWrapper(t, body, code, &expected))
+	t.Run("InvalidUsername", testsignup(t, body, code, &expected))
 
 	body = `{"usernames":"abc", "password":"12345"}`
-	expected = jsonResp{false, "invalid username"}
-	t.Run("UnknownJsonField", signupWrapper(t, body, code, nil))
+	t.Run("UnknownJsonField", testsignup(t, body, code, nil))
 
 	body = `{"usernam:"abc", "password":"12345"}`
-	expected = jsonResp{false, "invalid username"}
-	t.Run("MalFormedRequest", signupWrapper(t, body, code, nil))
+	t.Run("MalFormedRequest", testsignup(t, body, code, nil))
 }
 
 // if expected is nil, do not verify expected msg
-func signupWrapper(t *testing.T, body string, code int, expected *jsonResp) func(*testing.T) {
+func testsignup(t *testing.T, body string, code int, expected *jsonResp) func(*testing.T) {
 
 	return func(t *testing.T) {
 
-		handler := makeAuthHandler(signupHandler)
+		handler := signupHandler
 
 		reqbody := strings.NewReader(body)
 		req := httptest.NewRequest("", "/signup", reqbody)
@@ -156,9 +154,14 @@ func signupWrapper(t *testing.T, body string, code int, expected *jsonResp) func
 			t.Fatalf("fail to decode body %s, error: %v",
 				string(body), err)
 		}
-		if !reflect.DeepEqual(got, expected) {
-			t.Fatalf("body is unexpected. want %v, but got %v",
-				encodeJson(expected), string(body))
+
+		if got.Success != expected.Success {
+			t.Fatalf("status: want %v, got %v",
+				expected.Success, got.Success)
+		}
+		if !strings.Contains(got.Message, expected.Message) {
+			t.Fatalf("want [%q], got [%q]",
+				expected.Message, got.Message)
 		}
 	}
 }

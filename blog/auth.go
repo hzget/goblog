@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
@@ -93,40 +92,50 @@ func validateHash(origin, hash string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(origin))
 }
 
+func validateCredentials(w http.ResponseWriter, r *http.Request) (*Credentials, error) {
+
+	var creds = &Credentials{}
+
+	var isvalid = false
+	var err error
+
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err = decoder.Decode(creds); err != nil {
+		return nil, NewRespErr(ErrCredentialFailed, http.StatusBadRequest,
+			"fail to decode creds: "+err.Error())
+	}
+
+	// validate legal username
+	if isvalid, err = creds.Validate(); err != nil {
+		return nil, NewRespErr(ErrCredentialFailed, http.StatusBadRequest,
+			err.Error())
+	}
+
+	if !isvalid {
+		return nil, NewRespErr(ErrCredentialFailed, http.StatusBadRequest,
+			"invalid username.")
+	}
+
+	return creds, nil
+
+}
+
 func makeAuthHandler(fn func(http.ResponseWriter, *http.Request, *Credentials) *appError) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		var e *appError
-		var creds = &Credentials{}
-
-		var isvalid = false
-		var err error
-
-		decoder := json.NewDecoder(r.Body)
-		decoder.DisallowUnknownFields()
-		if err = decoder.Decode(creds); err != nil {
-			e = &appError{fmt.Errorf("fail to decode creds: %v", err),
-				http.StatusBadRequest}
-			goto Err
-		}
-
-		// validate legal username
-		if isvalid, err = creds.Validate(); err != nil {
-			e = &appError{errors.New("internal error happened when validate credentials"),
-				http.StatusInternalServerError}
-			goto Err
-		}
-
-		if !isvalid {
-			e = &appError{errors.New("invalid username"), http.StatusBadRequest}
-			goto Err
-		}
-
-		if e = fn(w, r, creds); e == nil {
+		creds, err := validateCredentials(w, r)
+		if err != nil {
+			RespondError(w, err)
 			return
 		}
 
-	Err:
+		e := fn(w, r, creds)
+
+		if e == nil {
+			return
+		}
+
 		if e.Code == http.StatusInternalServerError {
 			fmt.Println(e.Error)
 		}
@@ -134,26 +143,36 @@ func makeAuthHandler(fn func(http.ResponseWriter, *http.Request, *Credentials) *
 	}
 }
 
-func signupHandler(w http.ResponseWriter, r *http.Request, creds *Credentials) *appError {
+func signupHandler(w http.ResponseWriter, r *http.Request) {
+
+	creds, err := validateCredentials(w, r)
+	if err != nil {
+		RespondError(w, err)
+		return
+	}
 
 	exist, err := checkUserExist(creds.Username)
 	if err != nil {
-		return &appError{err, http.StatusInternalServerError}
+		http.Error(w, encodeJsonResp(false, err.Error()),
+			http.StatusInternalServerError)
+		return
 	}
 
 	if exist {
-		return &appError{errors.New("user already exists, please choose another name"),
-			http.StatusBadRequest}
+		http.Error(w, encodeJsonResp(false,
+			"user already exists, please choose another name"),
+			http.StatusBadRequest)
+		return
 	}
 
 	if err = creds.save(); err != nil {
-		return &appError{fmt.Errorf("fail to save creds %v, err info:%v\n", creds, err),
-			http.StatusInternalServerError}
+		s := fmt.Sprintf("fail to save creds %v, err info:%v\n", creds, err)
+		http.Error(w, encodeJsonResp(false, s),
+			http.StatusInternalServerError)
+		return
 	}
 
 	fmt.Fprintf(w, encodeJsonResp(true, "signup success"))
-
-	return nil
 }
 
 func signinHandler(w http.ResponseWriter, r *http.Request, creds *Credentials) *appError {
@@ -200,35 +219,35 @@ func ValidateSession(w http.ResponseWriter, r *http.Request) (string, error) {
 	c, err := r.Cookie("session_token")
 	switch {
 	case err == http.ErrNoCookie:
-		return "", &respErr{err, http.StatusUnauthorized}
+		return "", NewRespErr(err, http.StatusUnauthorized)
 	case err != nil:
 		fmt.Printf("internal error: %v\n", err)
-		return "", &respErr{err, http.StatusInternalServerError}
+		return "", NewRespErr(err, http.StatusInternalServerError)
 	}
 
 	cuser, err := r.Cookie("user")
 	switch {
 	case err == http.ErrNoCookie:
-		return "", &respErr{err, http.StatusUnauthorized}
+		return "", NewRespErr(err, http.StatusUnauthorized)
 	case err != nil:
 		fmt.Printf("internal error: %v\n", err)
-		return "", &respErr{err, http.StatusInternalServerError}
+		return "", NewRespErr(err, http.StatusInternalServerError)
 	}
 
 	token, err := checkKey(cuser.Value)
 	switch {
 	case err == redis.Nil:
-		return "", &respErr{err, http.StatusUnauthorized}
+		return "", NewRespErr(err, http.StatusUnauthorized)
 	case err != nil:
 		fmt.Printf("internal error: %v\n", err)
-		return "", &respErr{err, http.StatusInternalServerError}
+		return "", NewRespErr(err, http.StatusInternalServerError)
 	}
 
 	if token != c.Value {
 		err := fmt.Errorf("error: %v token unmatched %v != %v\n", cuser.Value, c.Value, token)
 		Info(err.Error())
 		clearCookies(w)
-		return "", &respErr{ErrCacheTokenUnmatch, http.StatusUnauthorized}
+		return "", NewRespErr(ErrCacheTokenUnmatch, http.StatusUnauthorized)
 	}
 
 	return cuser.Value, nil
