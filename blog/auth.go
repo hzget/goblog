@@ -92,7 +92,7 @@ func validateHash(origin, hash string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(origin))
 }
 
-func validateCredentials(w http.ResponseWriter, r *http.Request) (*Credentials, error) {
+func verifyCredentials(r *http.Request) (*Credentials, error) {
 
 	var creds = &Credentials{}
 
@@ -108,7 +108,7 @@ func validateCredentials(w http.ResponseWriter, r *http.Request) (*Credentials, 
 
 	// validate legal username
 	if isvalid, err = creds.Validate(); err != nil {
-		return nil, NewRespErr(ErrCredentialFailed, http.StatusBadRequest,
+		return nil, NewRespErr(ErrCredentialFailed, http.StatusInternalServerError,
 			err.Error())
 	}
 
@@ -118,12 +118,11 @@ func validateCredentials(w http.ResponseWriter, r *http.Request) (*Credentials, 
 	}
 
 	return creds, nil
-
 }
 
 func signupHandler(w http.ResponseWriter, r *http.Request) {
 
-	creds, err := validateCredentials(w, r)
+	creds, err := verifyCredentials(r)
 	if err != nil {
 		RespondError(w, err)
 		return
@@ -155,7 +154,7 @@ func signupHandler(w http.ResponseWriter, r *http.Request) {
 
 func signinHandler(w http.ResponseWriter, r *http.Request) {
 
-	creds, err := validateCredentials(w, r)
+	creds, err := verifyCredentials(r)
 	if err != nil {
 		RespondError(w, err)
 		return

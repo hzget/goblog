@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -99,6 +100,69 @@ func TestCredentialsRemove(t *testing.T) {
 	}
 	if existed {
 		t.Fatalf("find user %s in the datastore", creds.Username)
+	}
+}
+
+func TestVerifyCredentials(t *testing.T) {
+	cases := []struct {
+		name string
+		body string
+		want *Credentials
+		err  error
+	}{{
+		"Success",
+		`{"username":"1234567abc", "password":"admin"}`,
+		&Credentials{"1234567abc", "admin"},
+		nil,
+	}, {
+		"MalFormedRequest",
+		`{"username":admin", "password":"admin"}`,
+		nil,
+		ErrCredentialFailed,
+	}, {
+		"UnknownJsonField",
+		`{"usernames":"admin", "password":"admin"}`,
+		nil,
+		ErrCredentialFailed,
+	}, {
+		"InvalidUsername",
+		`{"username":"12345678901", "password":"admin"}`,
+		nil,
+		ErrCredentialFailed,
+	}}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			b := strings.NewReader(tc.body)
+			req := httptest.NewRequest("", "/", b)
+			got, err := verifyCredentials(req)
+
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Fatalf("want creds %v, but got %v", tc.want, got)
+			}
+
+			if tc.err == nil {
+				if err == nil {
+					return
+				}
+				t.Fatalf("want %T, %[1]v, but got %[2]T, %[2]v", nil, err)
+			}
+
+			v, ok := err.(*respErr)
+			if !ok {
+				t.Fatalf("returned error is not *respErr")
+			}
+
+			if !errors.Is(err, tc.err) {
+				t.Fatalf("want %T, %[1]v, but got %[2]T, %[2]v", tc.err, err)
+			}
+
+			if v.code != http.StatusBadRequest {
+				t.Fatalf("want code %d, but got %d",
+					http.StatusBadRequest, v.code)
+			}
+		})
 	}
 }
 
