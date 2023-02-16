@@ -222,10 +222,10 @@ func doARequestWithDetail(handler http.HandlerFunc, url, bodyJson, cookie string
  *              - url, bodyJson: is used to send request
  *              - data: response text will be decoded to its dynamic type value
  */
-func doATest(i interface{}, handler http.HandlerFunc, bodyJson string, data interface{}) {
+func doATest(tb testing.TB, handler http.HandlerFunc, bodyJson string, data interface{}) {
 
 	if err := doARequest(handler, "/", bodyJson, data); err != nil {
-		handleError(i, err)
+		tb.Fatal(err)
 		return
 	}
 
@@ -233,23 +233,7 @@ func doATest(i interface{}, handler http.HandlerFunc, bodyJson string, data inte
 		message := getRespMessage(data)
 		err := fmt.Errorf("test failed: req [%s] and response status: false, message: %s",
 			bodyJson, message)
-		handleError(i, err)
-	}
-}
-
-func handleError(i interface{}, err error) {
-
-	if err == nil {
-		return
-	}
-
-	switch v := i.(type) {
-	case *testing.T:
-		v.Fatal(err.Error())
-	case *testing.B:
-		v.Fatal(err.Error())
-	default:
-		fmt.Printf("unknown type %T, %v\n", v, v)
+		tb.Fatal(err)
 	}
 }
 

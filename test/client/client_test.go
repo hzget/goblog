@@ -274,10 +274,10 @@ func doARequest(url, bodyJson string, data interface{}) error {
  *              - url, bodyJson: is used to send request
  *              - data: response text will be decoded to its dynamic type value
  */
-func doATest(i interface{}, url, bodyJson string, data interface{}) {
+func doATest(tb testing.TB, url, bodyJson string, data interface{}) {
 
 	if err := doARequest(url, bodyJson, data); err != nil {
-		handleError(i, err)
+		tb.Fatal(err)
 		return
 	}
 
@@ -285,7 +285,7 @@ func doATest(i interface{}, url, bodyJson string, data interface{}) {
 		message := getRespMessage(data)
 		err := fmt.Errorf("test failed: req [%s] and response status: false, message: %s",
 			bodyJson, message)
-		handleError(i, err)
+		tb.Fatal(err)
 	}
 }
 
@@ -294,10 +294,10 @@ func doATest(i interface{}, url, bodyJson string, data interface{}) {
  *   it can be used to test kinds of different input and output
  *
  */
-func doTestAndVerifyStatus(i interface{}, url, bodyJson string, data interface{}, expectedStatus bool) {
+func doTestAndVerifyStatus(tb testing.TB, url, bodyJson string, data interface{}, expectedStatus bool) {
 
 	if err := doARequest(url, bodyJson, data); err != nil {
-		handleError(i, err)
+		tb.Fatal(err)
 		return
 	}
 
@@ -305,23 +305,7 @@ func doTestAndVerifyStatus(i interface{}, url, bodyJson string, data interface{}
 		message := getRespMessage(data)
 		err := fmt.Errorf("req [%s] expect status '%v' is not met. message: %s",
 			bodyJson, expectedStatus, message)
-		handleError(i, err)
-	}
-}
-
-func handleError(i interface{}, err error) {
-
-	if err == nil {
-		return
-	}
-
-	switch v := i.(type) {
-	case *testing.T:
-		v.Fatal(err.Error())
-	case *testing.B:
-		v.Fatal(err.Error())
-	default:
-		fmt.Printf("unknown type %T, %v\n", v, v)
+		tb.Fatal(err)
 	}
 }
 
