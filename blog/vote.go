@@ -34,6 +34,9 @@ func voteHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
+
+	id := fmt.Sprintf("%d", v.Id)
+	DBRemoveCache(Key_SQL_GetPostInfo + id)
 	fmt.Fprintf(w, "success!")
 }
 
