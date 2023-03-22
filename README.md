@@ -1,26 +1,26 @@
 goblog
 ======
 
-A blog system used for sharing ideas and analyzing
+A blog system used for recording ideas and analyzing
 these articles via AI algorithms.
-
-UI
---
-
-view a post | edit a post | analysis | analyze one post | analysis result|
-:----------:|:-----------:|:-------:|:------:|:------:
-![view](./pic/view.png)|![edit](./pic/edit.png)|![analysis](./pic/analysis.png)|![rawpost](https://github.com/hzget/hzget.github.io/blob/feature/neural_networks/pics/analysis_raw.png)|![result](https://github.com/hzget/hzget.github.io/blob/feature/neural_networks/pics/analysis_result.png)
 
 Architecture
 ------------
 
-                            ----------
-    webui        ---->      |        |  ---->  mysql
+                            +--------+
+    WebUI        ---->      |        |  ---->  mysql
                             |        |
-                            | goblog |  ---->  redis
-    test suilt   ---->      |        |
-                            |        |  ---->  data center (AI analysis)
-                            ----------
+    pprof        ---->      | goblog |  ---->  redis
+                            |        |
+    Test Suite   ---->      |        |  ---->  data center (AI analysis)
+                            +--------+
+
+WebUI
+-----
+
+view a post | edit a post | analysis | analyze one post | analysis result|
+:----------:|:-----------:|:-------:|:------:|:------:
+![view][view]|![edit][edit]|![analysis][analysis]|![rawpost][rawpost]|![result][result]
 
 [Tech Detail](./doc)
 -----------
@@ -146,3 +146,9 @@ Testing
 
 * automate [test case](./test/client), run with command ***go test***
 * manually test via ***curl*** command line
+
+[view]: ./pic/view.png
+[edit]: ./pic/edit.png
+[analysis]: ./pic/analysis.png
+[rawpost]: https://github.com/hzget/hzget.github.io/blob/feature/neural_networks/pics/analysis_raw.png
+[result]: https://github.com/hzget/hzget.github.io/blob/feature/neural_networks/pics/analysis_result.png
