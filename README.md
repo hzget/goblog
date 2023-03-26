@@ -68,29 +68,6 @@ Make use of redis cache for mysql operation.
               │  allocs/op  │ allocs/op   vs base                │
        Viewjs   130.00 ± 0%   92.00 ± 0%  -29.23% (p=0.000 n=20)
 
-functions
----------
-
-work as a blog site
--------------------
-
-* read/write blogs
-* signup/signin/logout
-* vote with stars 1~5
-* user ranks: bronze, silver, gold
-* user admin
-
-work as AI analysis system
---------------------------
-
-As a reader, the gold and silver user can
-get AI analysis of article(s) on the blog.
-
-The user can ask to analyze articles of an specific author
-and the request will sent to data-analysis center.
-
-this module is under developping now
-
 TO DO LIST
 ----------
 
@@ -144,7 +121,13 @@ The user can run containers of goblog, mysql, redis and analysis.
 Testing
 -------
 
-* automate [test case](./test/client), run with command ***go test***
+Test cases are in these `*_test.go` files inside [blog](./blog) dir.
+The user can run with ***go test*** commands to test specific funcs
+or run a benchmark test.
+
+There're also test case by which the client start a real http connection.
+
+* automate [test case](./test/client)
 * manually test via ***curl*** command line
 
 [view]: ./pic/view.png
