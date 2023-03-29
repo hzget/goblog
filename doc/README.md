@@ -16,9 +16,63 @@ End Points
 
 /view/#id
 /edit/#id
+/vote
+/analyze
 
 /viewjs
 /savejs
+
+/superadmin
+/saveranks
+
+Validation
+----------
+
+makes use of http cookies to carry user info
+and use redis to store the logged in session
+
+Performance
+-----------
+
+       goos: linux
+       goarch: amd64
+       pkg: github.com/hzget/goblog/blog
+       cpu: Intel(R) Core(TM) i5-7200U CPU @ 2.50GHz
+       BenchmarkSigninWrapper
+       BenchmarkSigninWrapper        39      28470708 ns/op       22471 B/op        202 allocs/op
+       BenchmarkViewHandler
+       BenchmarkViewHandler          46      28989517 ns/op       67169 B/op        676 allocs/op
+       BenchmarkViewjs
+       BenchmarkViewjs              100      12665127 ns/op       13074 B/op        128 allocs/op
+       PASS
+       ok      github.com/hzget/goblog/blog    6.501s
+
+cache
+-----
+
+Make use of redis cache for mysql operation.
+
+* reduce time consuming
+* support more parallel read operation (more than mysql limit)
+
+       phz@2004:~/proj/github.com/hzget/goblog/blog$ benchstat nocache.txt withcache.txt
+       nocache.txt:8: missing iteration count
+       withcache.txt:8: missing iteration count
+       goos: linux
+       goarch: amd64
+       pkg: github.com/hzget/goblog/blog
+       cpu: Intel(R) Core(TM) i5-7200U CPU @ 2.50GHz
+              │ nocache.txt  │            withcache.txt            │
+              │    sec/op    │   sec/op     vs base                │
+       Viewjs   13.079m ± 5%   6.288m ± 6%  -51.92% (p=0.000 n=20)
+
+              │ nocache.txt  │            withcache.txt            │
+              │     B/op     │     B/op      vs base               │
+       Viewjs   13.07Ki ± 0%   12.49Ki ± 0%  -4.44% (p=0.000 n=20)
+
+              │ nocache.txt │           withcache.txt            │
+              │  allocs/op  │ allocs/op   vs base                │
+       Viewjs   130.00 ± 0%   92.00 ± 0%  -29.23% (p=0.000 n=20)
 
 SQL tables
 ----------
